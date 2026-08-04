@@ -36,11 +36,14 @@ jobs:
 
       # macOS'un sistem Tcl/Tk 8.5'i pencereyi BOŞ çizer. Homebrew'un
       # python-tk paketi güncel Tk getirir; paket onunla derlenmeli.
+      # Homebrew Python'a doğrudan pip install yapılamaz (PEP 668, "externally
+      # managed"); sanal ortam kurulup PATH'in başına alınır.
       - name: macOS — güncel Tk'li Python
         if: runner.os == 'macOS'
         run: |
           brew install python-tk@3.13
-          echo "$(brew --prefix)/opt/python@3.13/libexec/bin" >> "$GITHUB_PATH"
+          "$(brew --prefix python@3.13)/bin/python3.13" -m venv /tmp/derleme
+          echo "/tmp/derleme/bin" >> "$GITHUB_PATH"
 
       - name: PyInstaller kur
         run: python -m pip install --upgrade pip pyinstaller tkinterdnd2
