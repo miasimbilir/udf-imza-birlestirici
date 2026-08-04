@@ -77,19 +77,25 @@ jobs:
           uygulama.py
 
       # Derlenen uygulama gerçekten çalışıyor mu? Kendi sınamasını koştur.
+      # --windowed derlenen exe'nin KONSOLU YOKTUR; çıktı boruya değil dosyaya
+      # yazdırılır ve süreç bitene kadar beklenir.
       - name: Sınama (Windows)
         if: runner.os == 'Windows'
         run: |
-          $cikti = & "dist/UDF Imza Birlestirici.exe" --sinama 2>&1 | Out-String
+          Start-Process -FilePath "dist\UDF Imza Birlestirici.exe" `
+            -ArgumentList "--sinama","--rapor","sinama.txt" -Wait -NoNewWindow
+          if (-not (Test-Path sinama.txt)) { throw "uygulama sinama raporu uretmedi" }
+          $cikti = Get-Content sinama.txt -Raw
           Write-Host $cikti
           if ($cikti -notmatch "SINAMA TAMAM") { throw "uygulama beklendigi gibi calismadi" }
 
       - name: Sınama (macOS)
         if: runner.os == 'macOS'
         run: |
-          cikti=$("dist/UDF Imza Birlestirici.app/Contents/MacOS/UDF Imza Birlestirici" --sinama 2>&1 || true)
-          echo "$cikti"
-          echo "$cikti" | grep -q "SINAMA TAMAM" || { echo "uygulama beklendigi gibi calismadi"; exit 1; }
+          "dist/UDF Imza Birlestirici.app/Contents/MacOS/UDF Imza Birlestirici" \
+            --sinama --rapor sinama.txt || true
+          cat sinama.txt
+          grep -q "SINAMA TAMAM" sinama.txt || { echo "uygulama beklendigi gibi calismadi"; exit 1; }
 
       - name: Paketle (Windows)
         if: runner.os == 'Windows'

@@ -440,17 +440,27 @@ class Uygulama(TEMEL_PENCERE):
 
 
 # --------------------------------------------------------------------------
-def sinama(yollar=None):
-    """Paketin bütünlüğünü doğrular (arayüz açmadan)."""
+def sinama(yollar=None, rapor_yolu=None):
+    """Paketin bütünlüğünü doğrular (arayüz açmadan).
+
+    Windows'ta --windowed derlenen exe'nin KONSOLU YOKTUR; print çıktısı hiçbir
+    yere gitmez. Bu yüzden sonuç istenirse bir dosyaya da yazılır.
+    """
+    satirlar = []
+
+    def yaz(*p):
+        metin = " ".join(str(x) for x in p)
+        satirlar.append(metin)
+        print(metin)
     from udf_ortak import zaman_coz, zaman_yaz
     assert zaman_yaz(zaman_coz("260727191600Z")).startswith("27.07.2026 22:16"), \
         "TSİ dönüşümü hatalı"
     assert tk.TkVersion >= 8.6, f"Tcl/Tk {tk.TkVersion} çok eski (8.6+ gerekir)"
     if yollar and len(yollar) >= 2:
-        sonuc = denetle(yollar, "", lambda a, d, t="": print(f"  [{d:9s}] {a:6s} {t}"))
-        print(f"ÇIKTI: {sonuc['ad']}  ({len(sonuc['baytlar'])} bayt)")
+        sonuc = denetle(yollar, "", lambda a, d, t="": yaz(f"  [{d:9s}] {a:6s} {t}"))
+        yaz(f"ÇIKTI: {sonuc['ad']}  ({len(sonuc['baytlar'])} bayt)")
         for i in sonuc["imzacilar"]:
-            print(f"  · {i['ad']} — {i['zaman']}")
+            yaz(f"  · {i['ad']} — {i['zaman']}")
     # Sürükle-bırak yalnız import edilebiliyor mu değil, KAYIT da oluyor mu?
     dnd = "yok"
     if SURUKLENEBILIR:
@@ -462,14 +472,24 @@ def sinama(yollar=None):
             dnd = "çalışıyor"
         except Exception as e:
             dnd = f"KURULAMADI ({type(e).__name__})"
-    print(f"SINAMA TAMAM — modüller yüklendi, çekirdek çalışıyor "
-          f"(Tcl/Tk {tk.TkVersion}, sürükle-bırak: {dnd}).")
+    yaz(f"SINAMA TAMAM — modüller yüklendi, çekirdek çalışıyor "
+        f"(Tcl/Tk {tk.TkVersion}, sürükle-bırak: {dnd}).")
+    if rapor_yolu:
+        try:
+            with open(rapor_yolu, "w", encoding="utf-8") as f:
+                f.write("\n".join(satirlar) + "\n")
+        except OSError as e:
+            print("rapor yazılamadı:", e, file=sys.stderr)
     return 0
 
 
 def main():
     if "--sinama" in sys.argv:
-        return sinama([y for y in sys.argv[1:] if y.lower().endswith(".udf")])
+        rapor = None
+        if "--rapor" in sys.argv:
+            i = sys.argv.index("--rapor")
+            rapor = sys.argv[i + 1] if i + 1 < len(sys.argv) else None
+        return sinama([y for y in sys.argv[1:] if y.lower().endswith(".udf")], rapor)
     if tk.TkVersion < 8.6:
         print(f"UYARI: Tcl/Tk {tk.TkVersion} çok eski; pencere boş görünebilir.",
               file=sys.stderr)
