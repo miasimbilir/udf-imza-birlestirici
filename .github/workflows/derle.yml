@@ -1,0 +1,124 @@
+name: Uygulamayı derle
+
+# Elle çalıştırılabilir; "s1.0" gibi bir etiket gönderilince sürüm de oluşturur.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["s*"]
+
+permissions:
+  contents: write
+
+jobs:
+  derle:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - isletim: windows-latest
+            ad: Windows
+            paket: UDF-Imza-Birlestirici-Windows.zip
+          - isletim: macos-latest
+            ad: macOS-AppleSilicon
+            paket: UDF-Imza-Birlestirici-macOS-AppleSilicon.zip
+          - isletim: macos-13
+            ad: macOS-Intel
+            paket: UDF-Imza-Birlestirici-macOS-Intel.zip
+
+    runs-on: ${{ matrix.isletim }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        if: runner.os == 'Windows'
+        with:
+          python-version: "3.12"
+
+      # macOS'un sistem Tcl/Tk 8.5'i pencereyi BOŞ çizer. Homebrew'un
+      # python-tk paketi güncel Tk getirir; paket onunla derlenmeli.
+      - name: macOS — güncel Tk'li Python
+        if: runner.os == 'macOS'
+        run: |
+          brew install python-tk@3.13
+          echo "$(brew --prefix)/opt/python@3.13/libexec/bin" >> "$GITHUB_PATH"
+
+      - name: PyInstaller kur
+        run: python -m pip install --upgrade pip pyinstaller tkinterdnd2
+
+      - name: Tcl/Tk sürümünü göster
+        run: python -c "import tkinter; print('Tcl/Tk', tkinter.TkVersion)"
+
+      - name: Windows — tek dosya exe
+        if: runner.os == 'Windows'
+        run: >
+          pyinstaller --noconfirm --clean --onefile --windowed
+          --name "UDF Imza Birlestirici" --icon ikon/uygulama.ico
+          --collect-all tkinterdnd2
+          --add-data "cms_imza.py;." --add-data "imza_dogrula.py;."
+          --add-data "udf_ortak.py;." --add-data "birlestirici.py;."
+          --hidden-import cms_imza --hidden-import imza_dogrula
+          --hidden-import udf_ortak --hidden-import birlestirici
+          uygulama.py
+
+      - name: macOS — uygulama paketi
+        if: runner.os == 'macOS'
+        run: >
+          pyinstaller --noconfirm --clean --windowed
+          --name "UDF Imza Birlestirici" --icon ikon/uygulama.icns
+          --collect-all tkinterdnd2
+          --osx-bundle-identifier "tr.arabuluculuk.udfimza"
+          --add-data "cms_imza.py:." --add-data "imza_dogrula.py:."
+          --add-data "udf_ortak.py:." --add-data "birlestirici.py:."
+          --hidden-import cms_imza --hidden-import imza_dogrula
+          --hidden-import udf_ortak --hidden-import birlestirici
+          uygulama.py
+
+      # Derlenen uygulama gerçekten çalışıyor mu? Kendi sınamasını koştur.
+      - name: Sınama (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          $cikti = & "dist/UDF Imza Birlestirici.exe" --sinama 2>&1 | Out-String
+          Write-Host $cikti
+          if ($cikti -notmatch "SINAMA TAMAM") { throw "uygulama beklendigi gibi calismadi" }
+
+      - name: Sınama (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          cikti=$("dist/UDF Imza Birlestirici.app/Contents/MacOS/UDF Imza Birlestirici" --sinama 2>&1 || true)
+          echo "$cikti"
+          echo "$cikti" | grep -q "SINAMA TAMAM" || { echo "uygulama beklendigi gibi calismadi"; exit 1; }
+
+      - name: Paketle (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          mkdir paket
+          copy "dist\UDF Imza Birlestirici.exe" paket\
+          copy KULLANIM.txt paket\ 2>$null
+          Compress-Archive -Path paket\* -DestinationPath "${{ matrix.paket }}"
+
+      - name: Paketle (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p paket
+          cp -R "dist/UDF Imza Birlestirici.app" paket/
+          cp KULLANIM.txt paket/ 2>/dev/null || true
+          cd paket && zip -qr "../${{ matrix.paket }}" .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.ad }}
+          path: ${{ matrix.paket }}
+
+      - name: Sürüme ekle
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.paket }}
+          body: |
+            Kurulum gerekmez. Arşivi açıp uygulamayı çalıştırın.
+
+            **Windows:** SmartScreen uyarısı çıkarsa “Ek bilgi” → “Yine de çalıştır”.
+            **macOS:** ilk açılışta uygulamaya sağ tıklayıp “Aç” deyin.
+
+            Uygulama imzalanmamıştır; bu uyarılar bundan kaynaklanır.
+            Belgeler bilgisayardan çıkmaz, internet bağlantısı kullanılmaz.

@@ -1,0 +1,47 @@
+UDF İMZA BİRLEŞTİRİCİ
+=====================
+
+NE İŞE YARAR
+Aynı belgenin ayrı ayrı e-imzalanmış nüshalarındaki imzaları tek dosyada
+toplar. Son tutanağı taraflara sırayla değil, aynı anda gönderebilirsiniz;
+herkes kendi nüshasını imzalar, bu program imzaları birleştirir.
+
+
+NASIL KULLANILIR
+1. Programı açın.
+2. "Dosya Ekle" ile imzalanmış nüshaları seçin (en az iki adet .udf).
+3. İsterseniz kendi TC kimlik numaranızı "Çapa imza TCKN" kutusuna yazın.
+   Böylece program, sizin imzanızı taşımayan nüshaları birleştirmeyi reddeder.
+4. "İncele ve Birleştir" düğmesine basın.
+5. Sekiz denetimin tamamı yeşil tik alırsa "Birleşik belgeyi kaydet"
+   düğmesi görünür. Kaydedip UYAP'ta açabilirsiniz.
+
+Denetimlerden biri kırmızı olursa dosya ÜRETİLMEZ; kırmızı satır sebebini
+gösterir.
+
+
+ÖNEMLİ
+- Program yeni imza ATMAZ, belge metnine DOKUNMAZ. Yalnız mevcut imzaları
+  tek dosyada toplar.
+- Taraflara mutlaka AYNI dosyanın kopyası gönderilmelidir. Belgeyi yeniden
+  kaydeder veya bir harfini değiştirirseniz nüshalar birleşmez (program bunu
+  yakalar ve durur).
+- Kaynak nüshalarınızı silmeyin; delil olarak saklayın.
+- Belgeler bilgisayarınızdan çıkmaz. Program internete bağlanmaz.
+
+
+İLK AÇILIŞTA UYARI ÇIKARSA
+Program ücretli bir kod imzalama sertifikasıyla imzalanmadığı için işletim
+sistemi uyarı gösterir:
+
+  Windows : "Ek bilgi" > "Yine de çalıştır"
+  macOS   : Uygulamaya SAĞ TIKLAYIP "Aç" deyin (ilk seferde bir kez)
+
+
+SORUN OLURSA
+Programı komut satırından şu şekilde çalıştırırsanız ayrıntılı çıktı verir:
+
+  Windows : "UDF Imza Birlestirici.exe" --sinama dosya1.udf dosya2.udf
+  macOS   : "UDF Imza Birlestirici.app/Contents/MacOS/UDF Imza Birlestirici" --sinama dosya1.udf dosya2.udf
+
+Dosya vermeden --sinama yazarsanız program kendi bütünlüğünü sınar.

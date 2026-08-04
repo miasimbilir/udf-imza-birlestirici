@@ -1,0 +1,5 @@
+# Uygulamayı çalıştırmak için ZORUNLU bir bağımlılık yoktur; Python 3.9+ yeterlidir.
+# Aşağıdakiler yalnızca ek özellik ve paketleme içindir.
+
+tkinterdnd2   # pencereye dosya sürükleyip bırakma (yoksa düğmeyle seçilir)
+pyinstaller   # .exe / .app paketi üretmek için
