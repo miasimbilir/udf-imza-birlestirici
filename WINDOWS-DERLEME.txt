@@ -1,38 +1,136 @@
-WINDOWS'TA .EXE ÜRETME — 3 ADIM
-================================
+═══════════════════════════════════════════════════════════════
+  UDF İMZA BİRLEŞTİRİCİ — WINDOWS'TA ÇALIŞTIRMA TALİMATI
+═══════════════════════════════════════════════════════════════
 
-1) PYTHON KURUN
-   https://www.python.org/downloads/windows/
-   İndirdiğiniz kurulumu açın.
-   ÖNEMLİ: İlk ekrandaki "Add python.exe to PATH" kutusunu işaretleyin,
-   sonra "Install Now" deyin.
-   (Microsoft Store sürümünü değil, python.org sürümünü kurun.)
-
-2) BU KLASÖRÜ WINDOWS BİLGİSAYARA KOPYALAYIN
-   Tamamını kopyalayın (USB, WhatsApp, e-posta ya da GitHub'dan indirme).
-   Klasör yaklaşık 400 KB'dir.
-
-3) "derle-windows.bat" DOSYASINA ÇİFT TIKLAYIN
-   Bir siyah pencere açılır ve sırayla:
-     · gerekli paketleri kurar
-     · uygulamayı derler
-     · ürettiği dosyayı sınar
-   Birkaç dakika sürer. "TAMAMLANDI" yazısını görene kadar bekleyin.
-
-SONUÇ
-   dist\UDF Imza Birlestirici.exe
-
-   Bu TEK dosyadır; başka bir Windows bilgisayara kopyalayıp doğrudan
-   çalıştırabilirsiniz, orada Python veya kurulum gerekmez.
+Bu klasör programın kaynak halidir. Windows'ta çalışan tek dosyalık bir
+program (.exe) üretmek için aşağıdaki üç adımı izlemeniz yeterli.
+Toplam 10-15 dakika sürer. Programlama bilgisi gerekmez.
 
 
-İLK AÇILIŞTA UYARI ÇIKARSA
-   Program ücretli bir kod imzalama sertifikasıyla imzalanmadığı için
-   Windows "Bilinmeyen yayıncı" uyarısı gösterir. Bu normaldir:
-   "Ek bilgi" yazısına tıklayın, sonra "Yine de çalıştır" deyin.
+───────────────────────────────────────────────────────────────
+ADIM 1 — PYTHON KURUN  (bir kereye mahsus)
+───────────────────────────────────────────────────────────────
+
+  1. Tarayıcıda şu adrese gidin:
+       https://www.python.org/downloads/windows/
+
+  2. En üstteki "Latest Python 3 Release" bağlantısına tıklayın,
+     açılan sayfanın altından "Windows installer (64-bit)" dosyasını
+     indirin.
+
+  3. İndirdiğiniz dosyayı çalıştırın.
+
+     ! ÇOK ÖNEMLİ: İlk ekranın EN ALTINDA
+         "Add python.exe to PATH"
+       yazan bir kutu vardır. ÖNCE BU KUTUYU İŞARETLEYİN,
+       sonra "Install Now" düğmesine basın.
+
+       Bu kutu işaretlenmezse sonraki adım çalışmaz.
+
+  4. Kurulum bitince "Close" deyip pencereyi kapatın.
+
+  Not: Microsoft Store'daki Python sürümünü KULLANMAYIN,
+       yukarıdaki python.org sürümünü kurun.
 
 
-BİR ŞEY TERS GİDERSE
-   Siyah penceredeki hata mesajını okuyun; genellikle Python'un PATH'e
-   eklenmemiş olmasından kaynaklanır (1. adımdaki kutu işaretlenmemiştir).
-   O durumda Python'u kaldırıp kutuyu işaretleyerek yeniden kurun.
+───────────────────────────────────────────────────────────────
+ADIM 2 — BU KLASÖRÜ BİLGİSAYARA ÇIKARIN
+───────────────────────────────────────────────────────────────
+
+  Size gelen ZIP dosyasına sağ tıklayıp "Tümünü ayıkla" deyin.
+  Klasörü masaüstüne çıkarmanız yeterli.
+
+  Klasörün içinde şu dosyaları görmelisiniz:
+     derle-windows.bat
+     uygulama.py
+     cms_imza.py
+     ... (ve birkaç dosya daha)
+
+
+───────────────────────────────────────────────────────────────
+ADIM 3 — "derle-windows.bat" DOSYASINA ÇİFT TIKLAYIN
+───────────────────────────────────────────────────────────────
+
+  Siyah bir pencere açılır ve sırayla şunları yapar:
+     · gerekli yardımcı paketleri indirir  (internet gerekir)
+     · programı derler
+     · ürettiği dosyayı sınayıp doğru çalıştığını kontrol eder
+
+  Birkaç dakika sürebilir. Pencereyi KAPATMAYIN,
+  "TAMAMLANDI" yazısını görene kadar bekleyin.
+
+  Windows Defender veya güvenlik duvarı izin isterse "İzin ver" deyin.
+
+
+═══════════════════════════════════════════════════════════════
+  SONUÇ
+═══════════════════════════════════════════════════════════════
+
+  Klasörün içinde "dist" adlı yeni bir klasör oluşur.
+  İçinde tek bir dosya vardır:
+
+       dist\UDF Imza Birlestirici.exe
+
+  Bu dosya kendi başına çalışır. Başka bir Windows bilgisayara
+  kopyalayıp doğrudan açabilirsiniz; orada Python'a veya kuruluma
+  gerek yoktur.
+
+
+═══════════════════════════════════════════════════════════════
+  PROGRAMI DENEMEK İSTERSENİZ
+═══════════════════════════════════════════════════════════════
+
+  Program, aynı belgenin ayrı ayrı e-imzalanmış iki nüshasındaki
+  imzaları tek dosyada toplar.
+
+  Denemek için elinizde AYNI belgenin iki ayrı e-imzalı nüshası
+  olmalıdır:
+
+    1. UYAP Doküman Editörü'nde kısa bir deneme belgesi yazın.
+       (Gerçek bir dosya kullanmayın.)
+    2. İmzalamadan iki ayrı adla kaydedin — ikisi de aynı metin.
+    3. Birini kendiniz imzalayın, diğerini imzalaması için
+       başka birine gönderin.
+    4. İki imzalı nüshayı programa sürükleyin, "İncele" deyin.
+    5. "Birleştirmeye uygun" yazarsa "Birleştir" ile kaydedin.
+    6. Kaydettiğiniz dosyayı UYAP Doküman Editörü'nde açıp
+       imzaların hepsinin göründüğünü kontrol edin.
+
+  E-imzanız yoksa programı yine açabilir, arayüzünü görebilirsiniz;
+  yalnızca birleştirme adımını deneyemezsiniz.
+
+
+═══════════════════════════════════════════════════════════════
+  "BİLİNMEYEN YAYINCI" UYARISI ÇIKARSA
+═══════════════════════════════════════════════════════════════
+
+  Program ücretli bir kod imzalama sertifikasıyla imzalanmadığı için
+  Windows SmartScreen mavi bir uyarı gösterebilir. Bu normaldir ve
+  programda bir sorun olduğu anlamına gelmez.
+
+      "Ek bilgi"  ->  "Yine de çalıştır"
+
+  diyerek geçebilirsiniz.
+
+
+═══════════════════════════════════════════════════════════════
+  BİR ŞEY TERS GİDERSE
+═══════════════════════════════════════════════════════════════
+
+  Siyah pencerede kırmızı bir hata mesajı çıkarsa, o mesajın
+  ekran görüntüsünü alıp gönderin.
+
+  En sık karşılaşılan sorun: "Python bulunamadı"
+  Sebebi, 1. adımdaki "Add python.exe to PATH" kutusunun
+  işaretlenmemiş olmasıdır. Python'u kaldırıp, kutuyu işaretleyerek
+  yeniden kurun.
+
+
+───────────────────────────────────────────────────────────────
+  Program internete bağlanmaz, hiçbir veri göndermez; tüm işlem
+  kendi bilgisayarınızda yapılır. (Yalnızca derleme sırasında
+  yardımcı paketleri indirmek için internet gerekir.)
+
+  UDF İmza Birleştirici · Av. Arb. M. İbrahim Asım Bilir
+  av.ibrahimbilir@gmail.com
+───────────────────────────────────────────────────────────────
