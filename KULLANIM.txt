@@ -9,15 +9,21 @@ herkes kendi nüshasını imzalar, bu program imzaları birleştirir.
 
 NASIL KULLANILIR
 1. Programı açın.
-2. "Dosya Ekle" ile imzalanmış nüshaları seçin (en az iki adet .udf).
-3. İsterseniz kendi TC kimlik numaranızı "Çapa imza TCKN" kutusuna yazın.
-   Böylece program, sizin imzanızı taşımayan nüshaları birleştirmeyi reddeder.
-4. "İncele ve Birleştir" düğmesine basın.
-5. Sekiz denetimin tamamı yeşil tik alırsa "Birleşik belgeyi kaydet"
-   düğmesi görünür. Kaydedip UYAP'ta açabilirsiniz.
+2. İmzalanmış nüshaları pencereye sürükleyin ya da tıklayıp seçin
+   (en az iki adet .udf).
+3. "İncele" düğmesine basın.
+4. "Birleştirmeye uygun" yazarsa "Birleştir" düğmesi çıkar; belgeyi
+   kaydedin ve UYAP Doküman Editörü'nde açıp imzaları kontrol edin.
 
-Denetimlerden biri kırmızı olursa dosya ÜRETİLMEZ; kırmızı satır sebebini
-gösterir.
+Denetimlerden biri düşerse dosya ÜRETİLMEZ; kırmızı satır sebebini yazar,
+"Ayrıntı" düğmesi ayrıntısını gösterir.
+
+RAPORLAR
+Denetim geçtikten sonra iki rapor düğmesi çıkar:
+  · Denetim raporu — hangi denetimden ne sonuç çıktığı, belge özeti
+  · İmza raporu    — imzacı adları, TC numaraları ve imza zamanları;
+                     belgeye yapıştırmak için sade biçimde
+Her ikisi de "Panoya kopyala" ile kopyalanabilir.
 
 
 ÖNEMLİ
