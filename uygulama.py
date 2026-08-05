@@ -32,7 +32,8 @@ UYGULAMA_ADI = "UDF İmza Birleştirici"
 SURUM = "1.0"
 YAZAR = "Av. Arb. M. İbrahim Asım Bilir"
 YAZAR_EK = "av.ibrahimbilir@gmail.com"
-TELIF = "© 2026 Av. Arb. M. İbrahim Asım Bilir — MIT Lisansı"
+TELIF = "© 2026 Av. Arb. M. İbrahim Asım Bilir"
+LISANS = "Ücretsiz kullanılabilir ve dağıtılabilir; satılamaz."
 
 ACIK_TEMA = {"yesil": "#127a3d", "kirmizi": "#b4232a", "soluk": "#6b7280",
              "cizgi": "#d7d9dd", "kagit": "#ffffff", "yazi": "#1c1f24",
@@ -432,6 +433,8 @@ class Uygulama(TEMEL_PENCERE):
                   ).pack(anchor="w")
         ttk.Label(c, text=TELIF, foreground=self.renk["soluk"],
                   font=("Helvetica", 10)).pack(anchor="w", pady=(14, 0))
+        ttk.Label(c, text=LISANS, foreground=self.renk["soluk"],
+                  font=("Helvetica", 10)).pack(anchor="w")
         ttk.Button(c, text="Kapat", command=p.destroy).pack(anchor="e", pady=(16, 0))
         p.bind("<Escape>", lambda e: p.destroy())
 

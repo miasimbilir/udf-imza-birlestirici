@@ -20,14 +20,15 @@ VSVersionInfo(
          StringStruct('FileDescription', 'UDF İmza Birleştirici'),
          StringStruct('FileVersion', '1.0.0.0'),
          StringStruct('InternalName', 'UDF Imza Birlestirici'),
-         StringStruct('LegalCopyright', '© 2026 M. İbrahim Asım Bilir — MIT Lisansı'),
+         StringStruct('LegalCopyright', '© 2026 Av. Arb. M. İbrahim Asım Bilir'),
          StringStruct('OriginalFilename', 'UDF Imza Birlestirici.exe'),
          StringStruct('ProductName', 'UDF İmza Birleştirici'),
          StringStruct('ProductVersion', '1.0.0.0'),
          StringStruct('Comments',
                       'Aynı belgenin ayrı ayrı e-imzalanmış nüshalarındaki '
                       'imzaları tek dosyada toplar. Bağımsız bir yardımcı '
-                      'araçtır; hiçbir kurumla ilgisi yoktur.')])
+                      'araçtır; hiçbir kurumla ilgisi yoktur. Ücretsiz '
+                      'kullanılabilir ve dağıtılabilir; satılamaz.')])
     ]),
     VarFileInfo([VarStruct('Translation', [0x041f, 1200])])
   ]

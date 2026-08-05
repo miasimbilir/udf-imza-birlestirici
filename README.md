@@ -126,4 +126,10 @@ av.ibrahimbilir@gmail.com
 
 ## Lisans
 
-MIT — bkz. [LICENSE](LICENSE)
+Kişisel ve mesleki kullanım ile **ücretsiz** dağıtım serbesttir; inceleyebilir
+ve değiştirebilirsiniz.
+
+Programı satmak, ücret ya da abonelik karşılığı sunmak veya ticari bir
+yazılıma dahil etmek, önceden yazılı izin alınmadıkça yasaktır.
+
+Ayrıntı: [LICENSE](LICENSE)
