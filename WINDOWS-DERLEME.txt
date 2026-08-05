@@ -1,136 +1,80 @@
-═══════════════════════════════════════════════════════════════
-  UDF İMZA BİRLEŞTİRİCİ — WINDOWS'TA ÇALIŞTIRMA TALİMATI
-═══════════════════════════════════════════════════════════════
+UDF İMZA BİRLEŞTİRİCİ — WINDOWS DERLEME
+========================================
 
-Bu klasör programın kaynak halidir. Windows'ta çalışan tek dosyalık bir
-program (.exe) üretmek için aşağıdaki üç adımı izlemeniz yeterli.
-Toplam 10-15 dakika sürer. Programlama bilgisi gerekmez.
+Amaç: Windows için tek dosyalık bir .exe üretmek.
 
 
-───────────────────────────────────────────────────────────────
-ADIM 1 — PYTHON KURUN  (bir kereye mahsus)
-───────────────────────────────────────────────────────────────
-
-  1. Tarayıcıda şu adrese gidin:
-       https://www.python.org/downloads/windows/
-
-  2. En üstteki "Latest Python 3 Release" bağlantısına tıklayın,
-     açılan sayfanın altından "Windows installer (64-bit)" dosyasını
-     indirin.
-
-  3. İndirdiğiniz dosyayı çalıştırın.
-
-     ! ÇOK ÖNEMLİ: İlk ekranın EN ALTINDA
-         "Add python.exe to PATH"
-       yazan bir kutu vardır. ÖNCE BU KUTUYU İŞARETLEYİN,
-       sonra "Install Now" düğmesine basın.
-
-       Bu kutu işaretlenmezse sonraki adım çalışmaz.
-
-  4. Kurulum bitince "Close" deyip pencereyi kapatın.
-
-  Not: Microsoft Store'daki Python sürümünü KULLANMAYIN,
-       yukarıdaki python.org sürümünü kurun.
+GEREKSİNİM
+----------
+Python 3.9+ (python.org sürümü; Store sürümü değil).
+Kurulumda "Add python.exe to PATH" işaretli olmalı.
+Tcl/Tk 8.6+ gerekir — python.org kurulumu bunu zaten getirir.
 
 
-───────────────────────────────────────────────────────────────
-ADIM 2 — BU KLASÖRÜ BİLGİSAYARA ÇIKARIN
-───────────────────────────────────────────────────────────────
+DERLEME
+-------
+Klasörde derle-windows.bat dosyasını çalıştırın. Betik sırasıyla:
+paketleri kurar, derler, üretilen exe'yi sınar.
 
-  Size gelen ZIP dosyasına sağ tıklayıp "Tümünü ayıkla" deyin.
-  Klasörü masaüstüne çıkarmanız yeterli.
+Elle yapmayı tercih ederseniz:
 
-  Klasörün içinde şu dosyaları görmelisiniz:
-     derle-windows.bat
-     uygulama.py
-     cms_imza.py
-     ... (ve birkaç dosya daha)
+    python -m pip install --upgrade pip pyinstaller tkinterdnd2
 
+    pyinstaller --noconfirm --clean --onefile --windowed ^
+      --name "UDF Imza Birlestirici" --icon ikon\uygulama.ico ^
+      --version-file surum_bilgisi.txt ^
+      --collect-all tkinterdnd2 ^
+      --add-data "cms_imza.py;." --add-data "imza_dogrula.py;." ^
+      --add-data "udf_ortak.py;." --add-data "birlestirici.py;." ^
+      --hidden-import cms_imza --hidden-import imza_dogrula ^
+      --hidden-import udf_ortak --hidden-import birlestirici ^
+      uygulama.py
 
-───────────────────────────────────────────────────────────────
-ADIM 3 — "derle-windows.bat" DOSYASINA ÇİFT TIKLAYIN
-───────────────────────────────────────────────────────────────
-
-  Siyah bir pencere açılır ve sırayla şunları yapar:
-     · gerekli yardımcı paketleri indirir  (internet gerekir)
-     · programı derler
-     · ürettiği dosyayı sınayıp doğru çalıştığını kontrol eder
-
-  Birkaç dakika sürebilir. Pencereyi KAPATMAYIN,
-  "TAMAMLANDI" yazısını görene kadar bekleyin.
-
-  Windows Defender veya güvenlik duvarı izin isterse "İzin ver" deyin.
+Çıktı: dist\UDF Imza Birlestirici.exe
 
 
-═══════════════════════════════════════════════════════════════
-  SONUÇ
-═══════════════════════════════════════════════════════════════
+SINAMA
+------
+    dist\"UDF Imza Birlestirici.exe" --sinama --rapor sinama.txt
 
-  Klasörün içinde "dist" adlı yeni bir klasör oluşur.
-  İçinde tek bir dosya vardır:
+Çıktıda "SINAMA TAMAM" beklenir. --windowed derlendiği için exe'nin
+konsolu yoktur; sonuç bu yüzden dosyaya yazdırılır.
 
-       dist\UDF Imza Birlestirici.exe
+İki .udf yolu eklenirse arayüz açmadan tam denetimi koşturur:
 
-  Bu dosya kendi başına çalışır. Başka bir Windows bilgisayara
-  kopyalayıp doğrudan açabilirsiniz; orada Python'a veya kuruluma
-  gerek yoktur.
+    dist\"UDF Imza Birlestirici.exe" --sinama --rapor r.txt a.udf b.udf
 
 
-═══════════════════════════════════════════════════════════════
-  PROGRAMI DENEMEK İSTERSENİZ
-═══════════════════════════════════════════════════════════════
+NE İŞE YARIYOR
+--------------
+UDF imzası ayrık (detached) CMS'tir ve imzalar paraleldir: her SignerInfo
+doğrudan content.xml'in SHA-256 özetini imzalar, counterSignature yoktur.
+Dolayısıyla aynı belgenin ayrı ayrı imzalanmış nüshalarının SignerInfo
+kümeleri birleştirilebilir; hiçbir imza bozulmaz. Üretilen sign.sgn,
+UYAP'ın ardışık imzalamada yazdığıyla bayt bayt aynı çıkıyor.
 
-  Program, aynı belgenin ayrı ayrı e-imzalanmış iki nüshasındaki
-  imzaları tek dosyada toplar.
-
-  Denemek için elinizde AYNI belgenin iki ayrı e-imzalı nüshası
-  olmalıdır:
-
-    1. UYAP Doküman Editörü'nde kısa bir deneme belgesi yazın.
-       (Gerçek bir dosya kullanmayın.)
-    2. İmzalamadan iki ayrı adla kaydedin — ikisi de aynı metin.
-    3. Birini kendiniz imzalayın, diğerini imzalaması için
-       başka birine gönderin.
-    4. İki imzalı nüshayı programa sürükleyin, "İncele" deyin.
-    5. "Birleştirmeye uygun" yazarsa "Birleştir" ile kaydedin.
-    6. Kaydettiğiniz dosyayı UYAP Doküman Editörü'nde açıp
-       imzaların hepsinin göründüğünü kontrol edin.
-
-  E-imzanız yoksa programı yine açabilir, arayüzünü görebilirsiniz;
-  yalnızca birleştirme adımını deneyemezsiniz.
+Doğrulama saf Python'la yapılır (RSA PKCS#1 v1.5 ve ECDSA P-256/384/521);
+openssl gibi bir dış bağımlılık yoktur. Ayrıntı: README.md
 
 
-═══════════════════════════════════════════════════════════════
-  "BİLİNMEYEN YAYINCI" UYARISI ÇIKARSA
-═══════════════════════════════════════════════════════════════
+DENEMEK İÇİN
+------------
+Aynı belgenin iki ayrı e-imzalı nüshası gerekir. UYAP Doküman
+Editörü'nde bir deneme belgesi yazıp imzalamadan iki adla kaydedin,
+ayrı kişilere imzalatın, ikisini programa verin.
 
-  Program ücretli bir kod imzalama sertifikasıyla imzalanmadığı için
-  Windows SmartScreen mavi bir uyarı gösterebilir. Bu normaldir ve
-  programda bir sorun olduğu anlamına gelmez.
-
-      "Ek bilgi"  ->  "Yine de çalıştır"
-
-  diyerek geçebilirsiniz.
+E-imza yoksa arayüz görülebilir, birleştirme denenemez.
 
 
-═══════════════════════════════════════════════════════════════
-  BİR ŞEY TERS GİDERSE
-═══════════════════════════════════════════════════════════════
-
-  Siyah pencerede kırmızı bir hata mesajı çıkarsa, o mesajın
-  ekran görüntüsünü alıp gönderin.
-
-  En sık karşılaşılan sorun: "Python bulunamadı"
-  Sebebi, 1. adımdaki "Add python.exe to PATH" kutusunun
-  işaretlenmemiş olmasıdır. Python'u kaldırıp, kutuyu işaretleyerek
-  yeniden kurun.
+NOTLAR
+------
+· Exe imzalanmamıştır; SmartScreen uyarısı çıkar ("Ek bilgi" >
+  "Yine de çalıştır"). PyInstaller çıktıları bazı antivirüslerde
+  yanlış pozitif verebilir.
+· Program internete bağlanmaz. Derleme sırasında yalnızca paket
+  indirmek için internet gerekir.
+· Sorun çıkarsa hata çıktısını iletin.
 
 
-───────────────────────────────────────────────────────────────
-  Program internete bağlanmaz, hiçbir veri göndermez; tüm işlem
-  kendi bilgisayarınızda yapılır. (Yalnızca derleme sırasında
-  yardımcı paketleri indirmek için internet gerekir.)
-
-  UDF İmza Birleştirici · Av. Arb. M. İbrahim Asım Bilir
-  av.ibrahimbilir@gmail.com
-───────────────────────────────────────────────────────────────
+UDF İmza Birleştirici · Av. Arb. M. İbrahim Asım Bilir
+av.ibrahimbilir@gmail.com
