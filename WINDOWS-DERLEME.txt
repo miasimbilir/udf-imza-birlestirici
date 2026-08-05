@@ -1,0 +1,38 @@
+WINDOWS'TA .EXE ÜRETME — 3 ADIM
+================================
+
+1) PYTHON KURUN
+   https://www.python.org/downloads/windows/
+   İndirdiğiniz kurulumu açın.
+   ÖNEMLİ: İlk ekrandaki "Add python.exe to PATH" kutusunu işaretleyin,
+   sonra "Install Now" deyin.
+   (Microsoft Store sürümünü değil, python.org sürümünü kurun.)
+
+2) BU KLASÖRÜ WINDOWS BİLGİSAYARA KOPYALAYIN
+   Tamamını kopyalayın (USB, WhatsApp, e-posta ya da GitHub'dan indirme).
+   Klasör yaklaşık 400 KB'dir.
+
+3) "derle-windows.bat" DOSYASINA ÇİFT TIKLAYIN
+   Bir siyah pencere açılır ve sırayla:
+     · gerekli paketleri kurar
+     · uygulamayı derler
+     · ürettiği dosyayı sınar
+   Birkaç dakika sürer. "TAMAMLANDI" yazısını görene kadar bekleyin.
+
+SONUÇ
+   dist\UDF Imza Birlestirici.exe
+
+   Bu TEK dosyadır; başka bir Windows bilgisayara kopyalayıp doğrudan
+   çalıştırabilirsiniz, orada Python veya kurulum gerekmez.
+
+
+İLK AÇILIŞTA UYARI ÇIKARSA
+   Program ücretli bir kod imzalama sertifikasıyla imzalanmadığı için
+   Windows "Bilinmeyen yayıncı" uyarısı gösterir. Bu normaldir:
+   "Ek bilgi" yazısına tıklayın, sonra "Yine de çalıştır" deyin.
+
+
+BİR ŞEY TERS GİDERSE
+   Siyah penceredeki hata mesajını okuyun; genellikle Python'un PATH'e
+   eklenmemiş olmasından kaynaklanır (1. adımdaki kutu işaretlenmemiştir).
+   O durumda Python'u kaldırıp kutuyu işaretleyerek yeniden kurun.
