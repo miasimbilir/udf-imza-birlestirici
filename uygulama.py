@@ -7,7 +7,6 @@ Aynı belgenin ayrı ayrı e-imzalanmış nüshalarındaki imzaları tek dosyada
 
 Akış:  nüshaları ekle → İncele → (denetim geçerse) Birleştir → kaydet → raporlar
 """
-import json
 import os
 import sys
 import tkinter as tk
@@ -51,37 +50,6 @@ def tema_sec(pencere):
         return KOYU_TEMA if (r + g + b) / 3 < 32768 else ACIK_TEMA
     except Exception:
         return ACIK_TEMA
-
-
-# --------------------------------------------------------------------------
-# Ayarlar — kullanıcı dizininde saklanır
-# --------------------------------------------------------------------------
-def ayar_dosyasi():
-    if sys.platform == "darwin":
-        kok = os.path.expanduser("~/Library/Application Support")
-    elif os.name == "nt":
-        kok = os.environ.get("APPDATA") or os.path.expanduser("~")
-    else:
-        kok = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
-    return os.path.join(kok, "UDF Imza Birlestirici", "ayarlar.json")
-
-
-def ayar_oku():
-    try:
-        with open(ayar_dosyasi(), encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return {}
-
-
-def ayar_yaz(ayarlar):
-    try:
-        yol = ayar_dosyasi()
-        os.makedirs(os.path.dirname(yol), exist_ok=True)
-        with open(yol, "w", encoding="utf-8") as f:
-            json.dump(ayarlar, f, ensure_ascii=False, indent=1)
-    except OSError:
-        pass                                        # ayar kaydedilemezse çalışmaya devam
 
 
 # --------------------------------------------------------------------------
@@ -183,7 +151,6 @@ class Uygulama(TEMEL_PENCERE):
         self.minsize(520, 500)
         self.yollar = []
         self.sonuc = None
-        self.ayarlar = ayar_oku()
         self.renk = tema_sec(self)
         self._kur()
         try:                                        # Finder'dan uygulamaya sürükleme
@@ -200,8 +167,8 @@ class Uygulama(TEMEL_PENCERE):
         ust.pack(fill="x")
         ttk.Label(ust, text=UYGULAMA_ADI,
                   font=("Helvetica", 15, "bold")).pack(side="left")
-        ttk.Button(ust, text="Ayarlar", width=8,
-                   command=self.ayarlari_ac).pack(side="right")
+        ttk.Button(ust, text="Hakkında", width=9,
+                   command=self.hakkinda_ac).pack(side="right")
 
         # --- bırakma alanı ---
         self.birak = tk.Frame(dis, highlightthickness=2, highlightbackground=self.renk["cizgi"],
@@ -274,15 +241,8 @@ class Uygulama(TEMEL_PENCERE):
                    command=self.imza_raporu_ac).pack(side="left", padx=8)
         self.btn_ayrinti = ttk.Button(dis, text="Ayrıntı", command=self.ayrinti_goster)
 
-        alt_bilgi = ttk.Frame(dis)
-        alt_bilgi.pack(side="bottom", fill="x")
-        ttk.Label(alt_bilgi, foreground=self.renk["soluk"], font=("Helvetica", 10),
-                  text=f"{YAZAR} · s{SURUM}").pack(side="left")
-        hakkinda = ttk.Label(alt_bilgi, foreground=self.renk["soluk"],
-                             font=("Helvetica", 10, "underline"), cursor="pointinghand",
-                             text="Hakkında")
-        hakkinda.pack(side="right")
-        hakkinda.bind("<Button-1>", lambda e: self.hakkinda_ac())
+        ttk.Label(dis, foreground=self.renk["soluk"], font=("Helvetica", 10),
+                  text=f"{YAZAR} · s{SURUM}").pack(side="bottom", anchor="w")
         self.listeyi_ciz()
 
     # ------------------------------------------------------------ dosya işleri
@@ -355,7 +315,7 @@ class Uygulama(TEMEL_PENCERE):
         self.config(cursor="watch")
         self.update_idletasks()
         try:
-            sonuc = denetle(self.yollar, (self.ayarlar.get("capa_tckn") or "").strip())
+            sonuc = denetle(self.yollar)
         except Durdur as e:
             self.hata_ayrinti = str(e)
             self.durum_goster(False, "Birleştirilemez", str(e).split("\n")[0])
@@ -438,45 +398,6 @@ class Uygulama(TEMEL_PENCERE):
         ttk.Button(c, text="Kapat", command=p.destroy).pack(anchor="e", pady=(16, 0))
         p.bind("<Escape>", lambda e: p.destroy())
 
-    # ---------------------------------------------------------------- ayarlar
-    def ayarlari_ac(self):
-        p = tk.Toplevel(self)
-        p.title("Ayarlar")
-        p.transient(self)
-        p.resizable(False, False)
-        c = ttk.Frame(p, padding=16)
-        c.pack(fill="both", expand=True)
-        ttk.Label(c, text="Çapa imza TCKN", font=("Helvetica", 13, "bold")).pack(anchor="w")
-        ttk.Label(c, foreground=self.renk["soluk"], wraplength=380, justify="left",
-                  font=("Helvetica", 11),
-                  text="Kendi TC kimlik numaranızı yazarsanız program, sizin imzanızı "
-                       "taşımayan nüshaları birleştirmeyi reddeder. Boş bırakılırsa "
-                       "yalnızca “nüshalarda ortak bir imzacı var mı” denetlenir.\n\n"
-                       "Bu bilgi yalnızca bu bilgisayarda saklanır."
-                  ).pack(anchor="w", pady=(4, 10))
-        giris = ttk.Entry(c, width=22, font=("Helvetica", 13))
-        giris.insert(0, self.ayarlar.get("capa_tckn", ""))
-        giris.pack(anchor="w")
-        alt = ttk.Frame(c)
-        alt.pack(fill="x", pady=(16, 0))
-
-        def kaydet():
-            deger = giris.get().strip()
-            if deger and (not deger.isdigit() or len(deger) != 11):
-                messagebox.showwarning("Geçersiz",
-                                       "TC kimlik numarası 11 rakamdan oluşmalıdır.",
-                                       parent=p)
-                return
-            self.ayarlar["capa_tckn"] = deger
-            ayar_yaz(self.ayarlar)
-            p.destroy()
-            self.sifirla()
-
-        ttk.Button(alt, text="Kaydet", command=kaydet).pack(side="right")
-        ttk.Button(alt, text="Vazgeç", command=p.destroy).pack(side="right", padx=6)
-        giris.focus_set()
-        p.bind("<Return>", lambda e: kaydet())
-        p.bind("<Escape>", lambda e: p.destroy())
 
 
 # --------------------------------------------------------------------------

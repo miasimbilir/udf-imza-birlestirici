@@ -36,10 +36,9 @@ kesip de kullanabilirsiniz. Arabuluculukta gizlilik esas olduğu için
 ## Nasıl kullanılır
 
 1. İmzalanmış nüshaları ekleyin (en az iki `.udf`)
-2. İsterseniz kendi TC kimlik numaranızı **Çapa imza TCKN** kutusuna yazın —
-   program, sizin imzanızı taşımayan nüshaları birleştirmeyi reddeder
-3. **İncele ve Birleştir**
-4. Sekiz denetimin tamamı geçerse belgeyi kaydedin
+2. **İncele** — program sekiz güvenlik denetimini uygular
+3. Denetimler geçerse **Birleştir** düğmesi çıkar; belgeyi kaydedin
+4. İsterseniz **Denetim raporu** ve **İmza raporu**'nu panoya kopyalayın
 
 ## Güvenlik denetimleri
 
@@ -51,7 +50,7 @@ Hepsi geçilmeden dosya üretilmez.
 | 2 | Belge metni birebir aynı | Farklı metinlerin imzalarının karıştırılması |
 | 3 | Tüm imzalar kriptografik olarak geçerli | Bozulmuş veya sahte imza |
 | 4 | İmzalar bu belgenin özetine bağlı | İmzanın başka bir metne ait olması |
-| 5 | Ortak (çapa) imza mevcut | İlgisiz belgelerin birleştirilmesi |
+| 5 | Ortak imza mevcut | İlgisiz belgelerin birleştirilmesi |
 | 6 | Mükerrer imzacı yok | Aynı kişinin iki sertifikayla imzalaması |
 | 7 | Sertifikalar imza anında geçerliydi | Süresi geçmiş sertifikayla imza |
 | 8 | Birleşik belge yeniden doğrulandı | Birleştirme sırasında bozulma |

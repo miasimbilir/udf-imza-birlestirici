@@ -136,8 +136,6 @@ def denetle(yollar, capa_tckn="", bildir=None):
     else:
         bildir("capa", "tamam", ", ".join(c["ad"] for c in ortak_certler) +
                " — her nüshada ortak")
-        uyarilar.append("Çapa imza TCKN'si girilmedi; ortak imzacının doğru kişi "
-                        "olduğunu listeden teyit edin.")
 
     # ---- KAPI 5: mükerrer imzacı -------------------------------------------
     bildir("muk", "calisiyor", "")
