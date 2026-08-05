@@ -50,6 +50,7 @@ echo.
 echo [3/4] Uygulama derleniyor...
 pyinstaller --noconfirm --clean --onefile --windowed ^
   --name "UDF Imza Birlestirici" --icon ikon\uygulama.ico ^
+  --version-file surum_bilgisi.txt ^
   --collect-all tkinterdnd2 ^
   --add-data "cms_imza.py;." --add-data "imza_dogrula.py;." ^
   --add-data "udf_ortak.py;." --add-data "birlestirici.py;." ^

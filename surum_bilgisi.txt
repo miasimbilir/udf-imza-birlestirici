@@ -1,0 +1,34 @@
+# Windows'ta dosyaya gömülen sürüm bilgisi.
+# Sağ tık > Özellikler > Ayrıntılar sekmesinde görünür.
+# PyInstaller'a --version-file surum_bilgisi.txt ile verilir.
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(1, 0, 0, 0),
+    prodvers=(1, 0, 0, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo([
+      StringTable(
+        '041f04b0',                      # 041f = Türkçe, 04b0 = Unicode
+        [StringStruct('CompanyName', 'Av. Arb. M. İbrahim Asım Bilir'),
+         StringStruct('FileDescription', 'UDF İmza Birleştirici'),
+         StringStruct('FileVersion', '1.0.0.0'),
+         StringStruct('InternalName', 'UDF Imza Birlestirici'),
+         StringStruct('LegalCopyright', '© 2026 M. İbrahim Asım Bilir — MIT Lisansı'),
+         StringStruct('OriginalFilename', 'UDF Imza Birlestirici.exe'),
+         StringStruct('ProductName', 'UDF İmza Birleştirici'),
+         StringStruct('ProductVersion', '1.0.0.0'),
+         StringStruct('Comments',
+                      'Aynı belgenin ayrı ayrı e-imzalanmış nüshalarındaki '
+                      'imzaları tek dosyada toplar. Bağımsız bir yardımcı '
+                      'araçtır; hiçbir kurumla ilgisi yoktur.')])
+    ]),
+    VarFileInfo([VarStruct('Translation', [0x041f, 1200])])
+  ]
+)

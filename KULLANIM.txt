@@ -45,3 +45,8 @@ Programı komut satırından şu şekilde çalıştırırsanız ayrıntılı ç�
   macOS   : "UDF Imza Birlestirici.app/Contents/MacOS/UDF Imza Birlestirici" --sinama dosya1.udf dosya2.udf
 
 Dosya vermeden --sinama yazarsanız program kendi bütünlüğünü sınar.
+
+
+------------------------------------------------------------
+UDF İmza Birleştirici · Av. Arb. M. İbrahim Asım Bilir
+av.ibrahimbilir@gmail.com

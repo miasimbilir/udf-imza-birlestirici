@@ -119,6 +119,11 @@ Bu program bağımsız bir yardımcı araçtır; UYAP ile, Adalet Bakanlığı i
 herhangi bir kurumla ilgisi yoktur. Ürettiği belgeyi kullanmadan önce UYAP'ta
 açıp imzaları kontrol etmek kullanıcının sorumluluğundadır.
 
+## Geliştiren
+
+**Av. Arb. M. İbrahim Asım Bilir**  
+av.ibrahimbilir@gmail.com
+
 ## Lisans
 
 MIT — bkz. [LICENSE](LICENSE)

@@ -55,6 +55,7 @@ jobs:
         run: >
           pyinstaller --noconfirm --clean --onefile --windowed
           --name "UDF Imza Birlestirici" --icon ikon/uygulama.ico
+          --version-file surum_bilgisi.txt
           --collect-all tkinterdnd2
           --add-data "cms_imza.py;." --add-data "imza_dogrula.py;."
           --add-data "udf_ortak.py;." --add-data "birlestirici.py;."
@@ -74,6 +75,10 @@ jobs:
           --hidden-import cms_imza --hidden-import imza_dogrula
           --hidden-import udf_ortak --hidden-import birlestirici
           uygulama.py
+
+      - name: macOS — sürüm bilgisini göm
+        if: runner.os == 'macOS'
+        run: python plist_yaz.py
 
       # Derlenen uygulama gerçekten çalışıyor mu? Kendi sınamasını koştur.
       # --windowed derlenen exe'nin KONSOLU YOKTUR; çıktı boruya değil dosyaya

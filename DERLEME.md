@@ -20,6 +20,7 @@ python -m pip install --upgrade pip pyinstaller tkinterdnd2
 
 pyinstaller --noconfirm --clean --onefile --windowed ^
   --name "UDF Imza Birlestirici" --icon ikon\uygulama.ico ^
+  --version-file surum_bilgisi.txt ^
   --collect-all tkinterdnd2 ^
   --add-data "cms_imza.py;." --add-data "imza_dogrula.py;." ^
   --add-data "udf_ortak.py;." --add-data "birlestirici.py;." ^
@@ -57,6 +58,8 @@ brew install python-tk@3.13
   --hidden-import cms_imza --hidden-import imza_dogrula \
   --hidden-import udf_ortak --hidden-import birlestirici \
   uygulama.py
+
+python plist_yaz.py          # sürüm ve telif bilgisini Info.plist'e göm
 ```
 
 Sonuç: `dist/UDF Imza Birlestirici.app`

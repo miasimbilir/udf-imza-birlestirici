@@ -30,6 +30,9 @@ except Exception:
 
 UYGULAMA_ADI = "UDF İmza Birleştirici"
 SURUM = "1.0"
+YAZAR = "Av. Arb. M. İbrahim Asım Bilir"
+YAZAR_EK = "av.ibrahimbilir@gmail.com"
+TELIF = "© 2026 Av. Arb. M. İbrahim Asım Bilir — MIT Lisansı"
 
 ACIK_TEMA = {"yesil": "#127a3d", "kirmizi": "#b4232a", "soluk": "#6b7280",
              "cizgi": "#d7d9dd", "kagit": "#ffffff", "yazi": "#1c1f24",
@@ -123,7 +126,8 @@ def denetim_raporu(sonuc):
         s += ["", "BİLGİ NOTLARI"]
         s += [f"  • {u}" for u in sonuc["uyarilar"]]
     s += ["", "Bu rapor, imzaların birleştirilmesi sırasında yapılan denetimleri",
-          "gösterir. Belgeler bilgisayardan çıkarılmamış, internet kullanılmamıştır."]
+          "gösterir. Belgeler bilgisayardan çıkarılmamış, internet kullanılmamıştır.",
+          "", f"{UYGULAMA_ADI} s{SURUM} · {YAZAR}"]
     return "\n".join(s)
 
 
@@ -269,9 +273,15 @@ class Uygulama(TEMEL_PENCERE):
                    command=self.imza_raporu_ac).pack(side="left", padx=8)
         self.btn_ayrinti = ttk.Button(dis, text="Ayrıntı", command=self.ayrinti_goster)
 
-        ttk.Label(dis, foreground=self.renk["soluk"], font=("Helvetica", 10),
-                  text=f"İmzaları birleştirir; yeni imza atmaz, belge metnine dokunmaz. "
-                       f"· s{SURUM}").pack(side="bottom", anchor="w")
+        alt_bilgi = ttk.Frame(dis)
+        alt_bilgi.pack(side="bottom", fill="x")
+        ttk.Label(alt_bilgi, foreground=self.renk["soluk"], font=("Helvetica", 10),
+                  text=f"{YAZAR} · s{SURUM}").pack(side="left")
+        hakkinda = ttk.Label(alt_bilgi, foreground=self.renk["soluk"],
+                             font=("Helvetica", 10, "underline"), cursor="pointinghand",
+                             text="Hakkında")
+        hakkinda.pack(side="right")
+        hakkinda.bind("<Button-1>", lambda e: self.hakkinda_ac())
         self.listeyi_ciz()
 
     # ------------------------------------------------------------ dosya işleri
@@ -397,6 +407,33 @@ class Uygulama(TEMEL_PENCERE):
     def imza_raporu_ac(self):
         RaporPenceresi(self, "İmza raporu", imza_raporu(self.sonuc), self.renk,
                        genislik=66, yukseklik=14)
+
+    def hakkinda_ac(self):
+        p = tk.Toplevel(self)
+        p.title("Hakkında")
+        p.transient(self)
+        p.resizable(False, False)
+        c = ttk.Frame(p, padding=20)
+        c.pack(fill="both", expand=True)
+        ttk.Label(c, text=UYGULAMA_ADI,
+                  font=("Helvetica", 16, "bold")).pack(anchor="w")
+        ttk.Label(c, text=f"Sürüm {SURUM}", foreground=self.renk["soluk"],
+                  font=("Helvetica", 11)).pack(anchor="w", pady=(1, 12))
+        ttk.Label(c, text=YAZAR, font=("Helvetica", 13)).pack(anchor="w")
+        ttk.Label(c, text=YAZAR_EK, foreground=self.renk["soluk"],
+                  font=("Helvetica", 11)).pack(anchor="w", pady=(1, 12))
+        ttk.Label(c, wraplength=400, justify="left", font=("Helvetica", 11),
+                  text="Aynı belgenin ayrı ayrı e-imzalanmış nüshalarındaki imzaları "
+                       "tek dosyada toplar. Yeni imza atmaz, belge metnine dokunmaz.\n\n"
+                       "Belgeler bilgisayardan çıkmaz; internet bağlantısı "
+                       "kullanılmaz.\n\n"
+                       "Bu bağımsız bir yardımcı araçtır; UYAP ile, Adalet Bakanlığı "
+                       "ile veya herhangi bir kurumla ilgisi yoktur."
+                  ).pack(anchor="w")
+        ttk.Label(c, text=TELIF, foreground=self.renk["soluk"],
+                  font=("Helvetica", 10)).pack(anchor="w", pady=(14, 0))
+        ttk.Button(c, text="Kapat", command=p.destroy).pack(anchor="e", pady=(16, 0))
+        p.bind("<Escape>", lambda e: p.destroy())
 
     # ---------------------------------------------------------------- ayarlar
     def ayarlari_ac(self):
