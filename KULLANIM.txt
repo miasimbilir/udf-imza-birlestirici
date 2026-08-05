@@ -18,6 +18,16 @@ NASIL KULLANILIR
 Denetimlerden biri düşerse dosya ÜRETİLMEZ; kırmızı satır sebebini yazar,
 "Ayrıntı" düğmesi ayrıntısını gösterir.
 
+DENETİM KAYDI
+"Birleştir" düğmesinin altındaki kutu işaretliyse, belgeyi kaydettiğinizde
+yanına bir de "... - denetim kaydi.txt" yazılır. Bu dosya hangi nüshaların
+birleştirildiğini, hangi imzaların alındığını ve belge özetini gösterir;
+sonradan "bu belge nasıl üretildi" sorusuna cevap verir.
+
+Kayıt dosyası TC kimlik numaraları içerir; belgeyi biriyle paylaşırken
+kayıt dosyasını yanında göndermeyin. İstemiyorsanız kutunun işaretini
+kaldırın.
+
 RAPORLAR
 Denetim geçtikten sonra iki rapor düğmesi çıkar:
   · Denetim raporu — hangi denetimden ne sonuç çıktığı, belge özeti

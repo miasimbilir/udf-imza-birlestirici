@@ -233,7 +233,16 @@ class Uygulama(TEMEL_PENCERE):
                                      justify="left")
         self.durum_detay.pack(anchor="w", pady=(2, 0))
 
-        self.btn_birlestir = ttk.Button(dis, text="Birleştir", command=self.birlestir)
+        birlestir_kutu = ttk.Frame(dis)
+        self.btn_birlestir = ttk.Button(birlestir_kutu, text="Birleştir",
+                                        command=self.birlestir)
+        self.btn_birlestir.pack()
+        # Denetim kaydı: belgenin yanına, ne birleştirildiğinin kalıcı kaydı.
+        self.kayit_istegi = tk.BooleanVar(value=True)
+        ttk.Checkbutton(birlestir_kutu, variable=self.kayit_istegi,
+                        text="Denetim kaydını belgenin yanına yaz"
+                        ).pack(pady=(6, 0))
+        self.birlestir_kutu = birlestir_kutu
         self.rapor_cerceve = ttk.Frame(dis)
         ttk.Button(self.rapor_cerceve, text="Denetim raporu",
                    command=self.denetim_raporu_ac).pack(side="left")
@@ -298,7 +307,7 @@ class Uygulama(TEMEL_PENCERE):
         self.sonuc = None
         self.hata_ayrinti = ""
         self.durum_kutu.pack_forget()
-        self.btn_birlestir.pack_forget()
+        self.birlestir_kutu.pack_forget()
         self.rapor_cerceve.pack_forget()
         self.btn_ayrinti.pack_forget()
 
@@ -331,7 +340,7 @@ class Uygulama(TEMEL_PENCERE):
                 True, "Birleştirmeye uygun",
                 f"{len(sonuc['imzacilar'])} imza · 8 denetim geçildi\n"
                 f"Ortak imza: {', '.join(ortak) if ortak else '—'}")
-            self.btn_birlestir.pack(pady=(0, 8))
+            self.birlestir_kutu.pack(pady=(0, 8))
             self.rapor_cerceve.pack()
         finally:
             self.config(cursor="")
@@ -356,10 +365,24 @@ class Uygulama(TEMEL_PENCERE):
         except OSError as e:
             messagebox.showerror("Kaydedilemedi", str(e), parent=self)
             return
+
+        satirlar = [os.path.basename(yol)]
+        if self.kayit_istegi.get():
+            kok = yol[:-4] if yol.lower().endswith(".udf") else yol
+            kayit_yolu = kok + " - denetim kaydi.txt"
+            try:
+                with open(kayit_yolu, "w", encoding="utf-8") as f:
+                    f.write(denetim_raporu(self.sonuc) + "\n")
+                satirlar.append(os.path.basename(kayit_yolu))
+            except OSError as e:
+                messagebox.showwarning(
+                    "Denetim kaydı yazılamadı",
+                    f"Belge kaydedildi, ancak denetim kaydı yazılamadı:\n\n{e}",
+                    parent=self)
         self.durum_goster(True, "Kaydedildi",
-                          f"{os.path.basename(yol)}\n"
-                          "Kaynak nüshalarınızı delil olarak saklayın.")
-        self.btn_birlestir.pack_forget()
+                          "\n".join(satirlar) +
+                          "\nKaynak nüshalarınızı delil olarak saklayın.")
+        self.birlestir_kutu.pack_forget()
         self.rapor_cerceve.pack()
 
     def denetim_raporu_ac(self):

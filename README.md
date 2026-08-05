@@ -40,6 +40,11 @@ kesip de kullanabilirsiniz. Arabuluculukta gizlilik esas olduğu için
 3. Denetimler geçerse **Birleştir** düğmesi çıkar; belgeyi kaydedin
 4. İsterseniz **Denetim raporu** ve **İmza raporu**'nu panoya kopyalayın
 
+Birleştir düğmesinin altındaki kutu işaretliyse belgenin yanına bir de
+denetim kaydı yazılır — hangi nüshaların birleştirildiğinin, hangi imzaların
+alındığının ve belge özetinin kalıcı kaydı. Kayıt TC kimlik numaraları
+içerdiği için belgeyi paylaşırken yanında göndermemeye dikkat edin.
+
 ## Güvenlik denetimleri
 
 Hepsi geçilmeden dosya üretilmez.
