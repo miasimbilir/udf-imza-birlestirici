@@ -18,6 +18,11 @@ NASIL KULLANILIR
 Denetimlerden biri düşerse dosya ÜRETİLMEZ; kırmızı satır sebebini yazar,
 "Ayrıntı" düğmesi ayrıntısını gösterir.
 
+TEK BELGEYİ İNCELEME
+Tek bir .udf eklerseniz düğme "İmzaları göster" olur: belgeyi kimlerin
+imzaladığını ve imzaların geçerli olup olmadığını gösterir, birleştirme
+yapmaz. Bir tutanağın imzalarına bakmak için kullanabilirsiniz.
+
 DENETİM KAYDI
 "Birleştir" düğmesinin altındaki kutu işaretliyse, belgeyi kaydettiğinizde
 yanına bir de "... - denetim kaydi.txt" yazılır. Bu dosya hangi nüshaların

@@ -35,6 +35,33 @@ def _sertifika_dizini(sd):
     return dizin
 
 
+def incele_tek(yol):
+    """Tek bir UDF'yi inceler: kimler imzalamış, imzalar geçerli mi.
+
+    Birleştirme yapmaz. Döner: {ad, imzacilar, ozet, gecerli, sebep}
+    """
+    u = udf_oku(yol)
+    sd = cms.coz(u["sgn"])
+    dizin = _sertifika_dizini(sd)
+    imzacilar, gecerli, sebep = [], True, ""
+    for si in sd["imzalar"]:
+        bi = cms.imza_bilgi(si)
+        cert_ham, cert = dizin.get((bi.get("issuer_der"), bi.get("seri")), (None, None))
+        ok, disi, s = dog.imza_dogrula(bi, cert_ham, u["content"])
+        if not ok:
+            gecerli = False
+            sebep = f"{cert['ad'] if cert else 'bilinmeyen imzacı'}: {s}"
+        imzacilar.append({
+            "ad": cert["ad"] if cert else "?", "tckn": cert.get("tckn") if cert else None,
+            "unvan": cert.get("unvan") if cert else None,
+            "zaman": zaman_yaz(zaman_coz(bi.get("zaman"))),
+            "capa": False, "disi": disi, "gecerli": ok,
+        })
+    return {"ad": os.path.basename(yol), "imzacilar": imzacilar, "gecerli": gecerli,
+            "sebep": sebep, "detached": sd["detached"],
+            "ozet": hashlib.sha256(u["content"]).hexdigest()}
+
+
 def denetle(yollar, capa_tckn="", bildir=None):
     """Kapıları uygular ve birleşik belgeyi üretir.
 

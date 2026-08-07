@@ -17,7 +17,7 @@ if getattr(sys, "frozen", False):                   # PyInstaller paketi
     sys.path.insert(0, os.path.dirname(os.path.abspath(sys.executable)))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from birlestirici import denetle
+from birlestirici import denetle, incele_tek
 from udf_ortak import TSI, Durdur
 
 # Sürükle-bırak Tkinter'da yerleşik değil; paket yoksa düğmeyle devam edilir.
@@ -100,6 +100,25 @@ def denetim_raporu(sonuc):
     return "\n".join(s)
 
 
+def tek_dosya_raporu(t):
+    """Tek belge incelemesi — birleştirme yapılmadan."""
+    s = ["UDF İMZA BİRLEŞTİRİCİ — BELGE BİLGİSİ",
+         f"Rapor tarihi: {datetime.now(TSI).strftime('%d.%m.%Y %H:%M')} TSİ", "",
+         f"BELGE: {t['ad']}", "", "İMZACILAR"]
+    for i, imz in enumerate(t["imzacilar"], 1):
+        notlar = []
+        if not imz.get("gecerli"):
+            notlar.append("İMZA DOĞRULANAMADI")
+        if imz.get("disi"):
+            notlar.append("standart dışı kodlama")
+        ek = ("  [" + ", ".join(notlar) + "]") if notlar else ""
+        s.append(f"  {i}. {imz['ad']}  (T.C. {imz.get('tckn') or '—'})  "
+                 f"{imz['zaman']}{ek}")
+    s += ["", "BELGE ÖZETİ (SHA-256)", f"  {t['ozet']}",
+          "", f"{UYGULAMA_ADI} s{SURUM} · {YAZAR}"]
+    return "\n".join(s)
+
+
 class RaporPenceresi(tk.Toplevel):
     """Kopyalanabilir metin penceresi."""
 
@@ -151,6 +170,7 @@ class Uygulama(TEMEL_PENCERE):
         self.minsize(520, 500)
         self.yollar = []
         self.sonuc = None
+        self.tek_sonuc = None
         self.renk = tema_sec(self)
         self._kur()
         try:                                        # Finder'dan uygulamaya sürükleme
@@ -298,13 +318,16 @@ class Uygulama(TEMEL_PENCERE):
         else:
             self.liste_cerceve.pack_forget()
         self.sifirla()
-        if len(self.yollar) >= 2:
+        if self.yollar:
+            self.btn_incele.config(text="İncele" if len(self.yollar) >= 2
+                                   else "İmzaları göster")
             self.btn_incele.pack(pady=(0, 4))
         else:
             self.btn_incele.pack_forget()
 
     def sifirla(self):
         self.sonuc = None
+        self.tek_sonuc = None
         self.hata_ayrinti = ""
         self.durum_kutu.pack_forget()
         self.birlestir_kutu.pack_forget()
@@ -323,6 +346,28 @@ class Uygulama(TEMEL_PENCERE):
         self.sifirla()
         self.config(cursor="watch")
         self.update_idletasks()
+        if len(self.yollar) == 1:
+            try:
+                self.tek_sonuc = incele_tek(self.yollar[0])
+            except Durdur as e:
+                self.hata_ayrinti = str(e)
+                self.durum_goster(False, "Okunamadı", str(e).split("\n")[0])
+                self.btn_ayrinti.pack(pady=(0, 6))
+            else:
+                t = self.tek_sonuc
+                n = len(t["imzacilar"])
+                self.durum_goster(
+                    t["gecerli"],
+                    f"{n} imza" if t["gecerli"] else "İmza doğrulanamadı",
+                    (", ".join(i["ad"] for i in t["imzacilar"]) if t["gecerli"]
+                     else t["sebep"]) +
+                    ("\nBirleştirmek için ikinci nüshayı da ekleyin."
+                     if t["gecerli"] else ""))
+                if t["gecerli"]:
+                    self.rapor_cerceve.pack()
+            finally:
+                self.config(cursor="")
+            return
         try:
             sonuc = denetle(self.yollar)
         except Durdur as e:
@@ -386,10 +431,15 @@ class Uygulama(TEMEL_PENCERE):
         self.rapor_cerceve.pack()
 
     def denetim_raporu_ac(self):
-        RaporPenceresi(self, "Denetim raporu", denetim_raporu(self.sonuc), self.renk)
+        if self.sonuc:
+            RaporPenceresi(self, "Denetim raporu", denetim_raporu(self.sonuc), self.renk)
+        else:                                        # tek dosya incelemesi
+            RaporPenceresi(self, "Belge bilgisi", tek_dosya_raporu(self.tek_sonuc),
+                           self.renk, genislik=70, yukseklik=16)
 
     def imza_raporu_ac(self):
-        RaporPenceresi(self, "İmza raporu", imza_raporu(self.sonuc), self.renk,
+        RaporPenceresi(self, "İmza raporu",
+                       imza_raporu(self.sonuc or self.tek_sonuc), self.renk,
                        genislik=66, yukseklik=14)
 
     def hakkinda_ac(self):
