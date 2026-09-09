@@ -5,3 +5,8 @@ __pycache__/
 *.pyc
 .venv/
 sinama.txt
+
+# Deneme belgeleri ve raporlar kişisel veri içerir — asla depoya girmesin
+*.udf
+*.sgn
+*denetim kaydi*.txt
