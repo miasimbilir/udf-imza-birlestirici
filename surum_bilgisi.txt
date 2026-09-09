@@ -16,11 +16,11 @@ VSVersionInfo(
     StringFileInfo([
       StringTable(
         '041f04b0',                      # 041f = Türkçe, 04b0 = Unicode
-        [StringStruct('CompanyName', 'Av. Arb. M. İbrahim Asım Bilir'),
+        [StringStruct('CompanyName', 'Av. Arb. Mevlana İbrahim Asım Bilir'),
          StringStruct('FileDescription', 'UDF İmza Birleştirici'),
          StringStruct('FileVersion', '1.0.0.0'),
          StringStruct('InternalName', 'UDF Imza Birlestirici'),
-         StringStruct('LegalCopyright', '© 2026 Av. Arb. M. İbrahim Asım Bilir'),
+         StringStruct('LegalCopyright', '© 2026 Av. Arb. Mevlana İbrahim Asım Bilir'),
          StringStruct('OriginalFilename', 'UDF Imza Birlestirici.exe'),
          StringStruct('ProductName', 'UDF İmza Birleştirici'),
          StringStruct('ProductVersion', '1.0.0.0'),

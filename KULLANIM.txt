@@ -69,7 +69,7 @@ Dosya vermeden --sinama yazarsanız program kendi bütünlüğünü sınar.
 
 
 ------------------------------------------------------------
-UDF İmza Birleştirici · Av. Arb. M. İbrahim Asım Bilir
+UDF İmza Birleştirici · Av. Arb. Mevlana İbrahim Asım Bilir
 av.ibrahimbilir@gmail.com
 
 Ücretsiz kullanılabilir ve dağıtılabilir; satılamaz.

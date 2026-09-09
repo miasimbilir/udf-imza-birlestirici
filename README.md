@@ -128,7 +128,7 @@ açıp imzaları kontrol etmek kullanıcının sorumluluğundadır.
 
 ## Geliştiren
 
-**Av. Arb. M. İbrahim Asım Bilir**  
+**Av. Arb. Mevlana İbrahim Asım Bilir**  
 av.ibrahimbilir@gmail.com
 
 ## Lisans
