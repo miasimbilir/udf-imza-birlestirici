@@ -156,4 +156,6 @@ jobs:
             **macOS:** ilk açılışta uygulamaya sağ tıklayıp “Aç” deyin.
 
             Uygulama imzalanmamıştır; bu uyarılar bundan kaynaklanır.
-            Belgeler bilgisayardan çıkmaz, internet bağlantısı kullanılmaz.
+            Belgeler bilgisayardan çıkmaz. Birleştirme için internet gerekmez;
+            program yalnızca siz “Güncellemeleri kontrol et” dediğinizde
+            GitHub'dan son sürüm numarasını sorar.
