@@ -3,13 +3,19 @@
 UDF İmza Birleştirici — masaüstü uygulaması.
 
 Aynı belgenin ayrı ayrı e-imzalanmış nüshalarındaki imzaları tek dosyada toplar.
-İnternete ve hiçbir dış programa bağlı değildir; belgeler bilgisayardan çıkmaz.
+Hiçbir dış programa bağlı değildir; belgeler bilgisayardan çıkmaz. İnternet
+yalnızca kullanıcı güncelleme denetimi düğmesine bastığında kullanılır.
 
 Akış:  nüshaları ekle → İncele → (denetim geçerse) Birleştir → kaydet → raporlar
 """
+import json
 import os
 import sys
+import threading
 import tkinter as tk
+import urllib.error
+import urllib.request
+import webbrowser
 from datetime import datetime
 from tkinter import filedialog, messagebox, ttk
 
@@ -33,6 +39,31 @@ YAZAR = "Av. Arb. Mevlana İbrahim Asım Bilir"
 YAZAR_EK = "av.ibrahimbilir@gmail.com"
 TELIF = "© 2026 Av. Arb. Mevlana İbrahim Asım Bilir"
 LISANS = "Ücretsiz kullanılabilir ve dağıtılabilir; satılamaz."
+
+# Güncelleme denetimi YALNIZCA kullanıcı düğmeye bastığında yapılır; program
+# kendiliğinden internete çıkmaz ve hiçbir belge gönderilmez — sorulan tek şey
+# en son sürümün numarasıdır.
+DEPO = "miasimbilir/udf-imza-birlestirici"
+SURUM_API = f"https://api.github.com/repos/{DEPO}/releases/latest"
+SURUM_SAYFA = f"https://github.com/{DEPO}/releases/latest"
+
+
+def surum_sayilari(etiket):
+    """'v1.2' → (1, 2). Karşılaştırma için sayıya çevirir."""
+    parcalar = []
+    for p in str(etiket).lstrip("vVsS").split("."):
+        rakam = "".join(c for c in p if c.isdigit())
+        parcalar.append(int(rakam) if rakam else 0)
+    return tuple(parcalar) or (0,)
+
+
+def son_surumu_sor():
+    """Depodaki en son sürüm etiketini döndürür. Ağ hatasında istisna atar."""
+    istek = urllib.request.Request(SURUM_API, headers={
+        "User-Agent": f"UDF-Imza-Birlestirici/{SURUM}",
+        "Accept": "application/vnd.github+json"})
+    with urllib.request.urlopen(istek, timeout=8) as yanit:
+        return json.load(yanit).get("tag_name") or ""
 
 ACIK_TEMA = {"yesil": "#127a3d", "kirmizi": "#b4232a", "soluk": "#6b7280",
              "cizgi": "#d7d9dd", "kagit": "#ffffff", "yazi": "#1c1f24",
@@ -459,8 +490,8 @@ class Uygulama(TEMEL_PENCERE):
         ttk.Label(c, wraplength=400, justify="left", font=("Helvetica", 11),
                   text="Aynı belgenin ayrı ayrı e-imzalanmış nüshalarındaki imzaları "
                        "tek dosyada toplar. Yeni imza atmaz, belge metnine dokunmaz.\n\n"
-                       "Belgeler bilgisayardan çıkmaz; internet bağlantısı "
-                       "kullanılmaz.\n\n"
+                       "Belgeler bilgisayardan çıkmaz; işlem için internet "
+                       "gerekmez.\n\n"
                        "Bu bağımsız bir yardımcı araçtır; UYAP ile, Adalet Bakanlığı "
                        "ile veya herhangi bir kurumla ilgisi yoktur."
                   ).pack(anchor="w")
@@ -468,8 +499,65 @@ class Uygulama(TEMEL_PENCERE):
                   font=("Helvetica", 10)).pack(anchor="w", pady=(14, 0))
         ttk.Label(c, text=LISANS, foreground=self.renk["soluk"],
                   font=("Helvetica", 10)).pack(anchor="w")
+
+        ttk.Separator(c, orient="horizontal").pack(fill="x", pady=(16, 14))
+        g = ttk.Frame(c)
+        g.pack(fill="x")
+        btn_g = ttk.Button(g, text="Güncellemeleri kontrol et")
+        btn_g.pack(side="left")
+        yazi_g = ttk.Label(g, text="", foreground=self.renk["soluk"],
+                           font=("Helvetica", 11))
+        yazi_g.pack(side="left", padx=12)
+        btn_indir = ttk.Button(c, text="İndirme sayfasını aç",
+                               command=lambda: webbrowser.open(SURUM_SAYFA))
+        btn_g.config(command=lambda: self.guncelleme_kontrol(p, btn_g, yazi_g, btn_indir))
+        ttk.Label(c, foreground=self.renk["soluk"], font=("Helvetica", 10),
+                  wraplength=400, justify="left",
+                  text="Denetim yalnızca siz bu düğmeye bastığınızda yapılır; "
+                       "belge gönderilmez, yalnızca en son sürüm numarası sorulur."
+                  ).pack(anchor="w", pady=(10, 0))
+
         ttk.Button(c, text="Kapat", command=p.destroy).pack(anchor="e", pady=(16, 0))
         p.bind("<Escape>", lambda e: p.destroy())
+
+    def guncelleme_kontrol(self, pencere, dugme, yazi, btn_indir):
+        """Arka planda sürüm sorar; arayüz donmasın diye ayrı iş parçacığında."""
+        dugme.config(state="disabled")
+        yazi.config(text="kontrol ediliyor…", foreground=self.renk["soluk"])
+        btn_indir.pack_forget()
+
+        def bitti(etiket, hata):
+            if not pencere.winfo_exists():
+                return
+            dugme.config(state="normal")
+            if hata is not None:
+                yazi.config(text="Kontrol edilemedi", foreground=self.renk["kirmizi"])
+                messagebox.showwarning(
+                    "Güncelleme kontrolü",
+                    "En son sürüm bilgisine ulaşılamadı.\n\n"
+                    "İnternet bağlantınızı denetleyin. Programın çalışması için "
+                    "internet gerekmez; bu denetim isteğe bağlıdır.",
+                    parent=pencere)
+                return
+            if surum_sayilari(etiket) > surum_sayilari(SURUM):
+                yazi.config(text=f"Yeni sürüm var: {etiket.lstrip('vV')}",
+                            foreground=self.renk["yesil"])
+                btn_indir.pack(anchor="w", pady=(10, 0))
+            else:
+                yazi.config(text="En güncel sürümü kullanıyorsunuz",
+                            foreground=self.renk["yesil"])
+
+        def is_parcacigi():
+            try:
+                etiket, hata = son_surumu_sor(), None
+            except Exception as e:
+                etiket, hata = None, e
+            try:                                     # pencere kapanmış olabilir
+                pencere.after(0, lambda: bitti(etiket, hata))
+            except Exception:
+                pass
+
+        threading.Thread(target=is_parcacigi, daemon=True).start()
 
 
 

@@ -48,7 +48,7 @@ Her ikisi de "Panoya kopyala" ile kopyalanabilir.
   kaydeder veya bir harfini değiştirirseniz nüshalar birleşmez (program bunu
   yakalar ve durur).
 - Kaynak nüshalarınızı silmeyin; delil olarak saklayın.
-- Belgeler bilgisayarınızdan çıkmaz. Program internete bağlanmaz.
+- Belgeler bilgisayarınızdan çıkmaz. Program kendiliğinden internete bağlanmaz.
 
 
 İLK AÇILIŞTA UYARI ÇIKARSA
@@ -74,3 +74,10 @@ av.ibrahimbilir@gmail.com
 
 Ücretsiz kullanılabilir ve dağıtılabilir; satılamaz.
 Ayrıntılı koşullar: LICENSE dosyası.
+
+
+GÜNCELLEME
+"Hakkında" penceresindeki "Güncellemeleri kontrol et" düğmesine bastığınızda
+program yalnızca en son sürüm numarasını sorar; belge veya kişisel veri
+gönderilmez. Yeni sürüm varsa indirme sayfasını açar, kendi başına bir şey
+indirmez veya kurmaz. Bu denetim isteğe bağlıdır; program internetsiz çalışır.

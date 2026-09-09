@@ -28,9 +28,12 @@ Yine de çalıştır", macOS'ta uygulamaya **sağ tıklayıp "Aç"** deyin.
 
 ## Belgeleriniz nereye gidiyor?
 
-**Hiçbir yere.** Program internete bağlanmaz, sunucu kullanmaz, hiçbir veri
-göndermez. Tüm işlem kendi bilgisayarınızda yapılır. İnternet bağlantınızı
-kesip de kullanabilirsiniz. Arabuluculukta gizlilik esas olduğu için
+**Hiçbir yere.** Belgeleriniz hiçbir sunucuya gönderilmez; tüm işlem kendi
+bilgisayarınızda yapılır ve internet bağlantınızı kesip de kullanabilirsiniz.
+
+Tek istisna, siz **Hakkında → Güncellemeleri kontrol et** düğmesine
+bastığınızda yapılan sürüm sorgusudur: yalnızca en son sürüm numarası sorulur,
+belge veya kişisel veri gönderilmez. Program bunu kendiliğinden yapmaz. Arabuluculukta gizlilik esas olduğu için
 (6325 sayılı Kanun m.4) program bu şekilde tasarlanmıştır.
 
 ## Nasıl kullanılır
