@@ -3,10 +3,6 @@ name: Uygulamayı derle
 # Elle çalıştırılabilir; "s1.0" gibi bir etiket gönderilince sürüm de oluşturur.
 on:
   workflow_dispatch:
-    inputs:
-      hedefler:
-        description: "Derlenecek paketler (virgülle ayrık)"
-        default: "macOS-AppleSilicon,macOS-Intel"
   push:
     tags: ["s*"]
 
@@ -19,9 +15,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - isletim: windows-2022
-            ad: Windows
-            paket: UDF-Imza-Birlestirici-Windows.zip
+          # Windows runner bu hesapta alınamıyor — iş 6 saat kuyrukta bekleyip
+          # iptal ediliyor. Exe elle derleniyor: derle-windows.bat +
+          # WINDOWS-DERLEME.txt. Runner çalışır hâle gelirse satırı geri açın;
+          # aşağıdaki Windows adımları yerinde duruyor.
+          # - isletim: windows-2022
+          #   ad: Windows
+          #   paket: UDF-Imza-Birlestirici-Windows.zip
           - isletim: macos-latest
             ad: macOS-AppleSilicon
             paket: UDF-Imza-Birlestirici-macOS-AppleSilicon.zip
@@ -30,9 +30,6 @@ jobs:
             ad: macOS-Intel
             paket: UDF-Imza-Birlestirici-macOS-Intel.zip
 
-    # Windows runner'ı bu hesapta kuyrukta takılıyor; elle çalıştırmada
-    # yalnızca seçilen paketler derlenir. Atlanan iş runner talep etmez.
-    if: github.event_name != 'workflow_dispatch' || contains(inputs.hedefler, matrix.ad)
     runs-on: ${{ matrix.isletim }}
     steps:
       - uses: actions/checkout@v4
