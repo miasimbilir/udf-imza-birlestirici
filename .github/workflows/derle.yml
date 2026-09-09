@@ -3,6 +3,10 @@ name: Uygulamayı derle
 # Elle çalıştırılabilir; "s1.0" gibi bir etiket gönderilince sürüm de oluşturur.
 on:
   workflow_dispatch:
+    inputs:
+      hedefler:
+        description: "Derlenecek paketler (virgülle ayrık)"
+        default: "macOS-AppleSilicon,macOS-Intel"
   push:
     tags: ["s*"]
 
@@ -26,6 +30,9 @@ jobs:
             ad: macOS-Intel
             paket: UDF-Imza-Birlestirici-macOS-Intel.zip
 
+    # Windows runner'ı bu hesapta kuyrukta takılıyor; elle çalıştırmada
+    # yalnızca seçilen paketler derlenir. Atlanan iş runner talep etmez.
+    if: github.event_name != 'workflow_dispatch' || contains(inputs.hedefler, matrix.ad)
     runs-on: ${{ matrix.isletim }}
     steps:
       - uses: actions/checkout@v4
@@ -124,6 +131,7 @@ jobs:
           mkdir paket
           copy "dist\UDF Imza Birlestirici.exe" paket\
           copy KULLANIM.txt paket\ 2>$null
+          copy LICENSE paket\ 2>$null
           Compress-Archive -Path paket\* -DestinationPath "${{ matrix.paket }}"
 
       - name: Paketle (macOS)
@@ -131,8 +139,8 @@ jobs:
         run: |
           mkdir -p paket
           cp -R "dist/UDF Imza Birlestirici.app" paket/
-          cp KULLANIM.txt paket/ 2>/dev/null || true
-          cd paket && zip -qr "../${{ matrix.paket }}" .
+          cp KULLANIM.txt LICENSE paket/ 2>/dev/null || true
+          cd paket && zip -qry "../${{ matrix.paket }}" .
 
       - uses: actions/upload-artifact@v4
         with:
