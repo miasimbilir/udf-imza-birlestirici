@@ -35,15 +35,30 @@ jobs:
         with:
           python-version: "3.12"
 
-      # macOS'un sistem Tcl/Tk 8.5'i pencereyi BOŞ çizer. Homebrew'un
-      # python-tk paketi güncel Tk getirir; paket onunla derlenmeli.
-      # Homebrew Python'a doğrudan pip install yapılamaz (PEP 668, "externally
-      # managed"); sanal ortam kurulup PATH'in başına alınır.
+      # macOS'un sistem Tcl/Tk 8.5'i pencereyi BOŞ çizer; 8.6+ şart.
+      # Runner'da kurulu Python'lar taranır, uygun Tk'lı olan seçilir; hiçbiri
+      # uymazsa Homebrew'dan kurulur. (Intel runner'da python.org sürümü
+      # /usr/local'ı tuttuğu için "brew link" başarısız oluyor — sorun değil,
+      # formül yine kurulur ve tam yolla çağrılır.)
+      # Homebrew Python'a doğrudan pip install yapılamaz (PEP 668); bu yüzden
+      # sanal ortam kurulup PATH'in başına alınır.
       - name: macOS — güncel Tk'li Python
         if: runner.os == 'macOS'
         run: |
-          brew install python-tk@3.13
-          "$(brew --prefix python@3.13)/bin/python3.13" -m venv /tmp/derleme
+          sec=""
+          adaylar=$(ls -d /Library/Frameworks/Python.framework/Versions/3.*/bin/python3 2>/dev/null || true)
+          for py in $adaylar; do
+            v=$("$py" -c "import tkinter;print(tkinter.TkVersion)" 2>/dev/null) || continue
+            if [ "$(printf '%s\n8.6' "$v" | sort -g | head -1)" = "8.6" ]; then
+              sec="$py"; break
+            fi
+          done
+          if [ -z "$sec" ]; then
+            brew install python-tk@3.13 || true
+            sec="$(brew --prefix python@3.13)/bin/python3.13"
+          fi
+          echo "seçilen Python: $sec  (Tcl/Tk $("$sec" -c 'import tkinter;print(tkinter.TkVersion)'))"
+          "$sec" -m venv /tmp/derleme
           echo "/tmp/derleme/bin" >> "$GITHUB_PATH"
 
       - name: PyInstaller kur
