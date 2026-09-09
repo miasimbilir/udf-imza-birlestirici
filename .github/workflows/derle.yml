@@ -21,8 +21,10 @@ jobs:
           - isletim: macos-latest
             ad: macOS-AppleSilicon
             paket: UDF-Imza-Birlestirici-macOS-AppleSilicon.zip
-          # Not: macos-13 (Intel) runner'ı emekliye ayrıldığı için kuyrukta
-          # sonsuza kadar bekliyordu; Intel Mac paketi şimdilik üretilmiyor.
+          # macos-13 emekli oldu; Intel paketi macos-15-intel ile üretiliyor.
+          - isletim: macos-15-intel
+            ad: macOS-Intel
+            paket: UDF-Imza-Birlestirici-macOS-Intel.zip
 
     runs-on: ${{ matrix.isletim }}
     steps:
