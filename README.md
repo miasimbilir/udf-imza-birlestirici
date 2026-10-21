@@ -62,7 +62,7 @@ Hepsi geçilmeden dosya üretilmez.
 | 3 | Tüm imzalar kriptografik olarak geçerli | Bozulmuş veya sahte imza |
 | 4 | İmzalar bu belgenin özetine bağlı | İmzanın başka bir metne ait olması |
 | 5 | Ortak imza mevcut | İlgisiz belgelerin birleştirilmesi |
-| 6 | Mükerrer imzacı yok | Aynı kişinin iki sertifikayla imzalaması |
+| 6 | Mükerrer imzacı ve nüsha yok | Aynı kişinin iki sertifikayla imzalaması; yeni imza katmayan nüsha (aynı dosyanın iki kez eklenmesi, taraf imzalamadan geri göndermesi) |
 | 7 | Sertifikalar imza anında geçerliydi | Süresi geçmiş sertifikayla imza |
 | 8 | Birleşik belge yeniden doğrulandı | Birleştirme sırasında bozulma |
 
@@ -121,6 +121,7 @@ Bütünlük sınaması:
 ```bash
 python3 uygulama.py --sinama                    # modüller ve çekirdek işlevler
 python3 uygulama.py --sinama a.udf b.udf        # arayüzsüz tam denetim
+python3 -m unittest discover -s testler -v      # test takımı (sentetik veriyle)
 ```
 
 ## Sorumluluk

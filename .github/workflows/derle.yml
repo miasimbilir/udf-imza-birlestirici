@@ -71,6 +71,9 @@ jobs:
       - name: Tcl/Tk sürümünü göster
         run: python -c "import tkinter; print('Tcl/Tk', tkinter.TkVersion)"
 
+      - name: Testler
+        run: python -m unittest discover -s testler -v
+
       - name: Windows — tek dosya exe
         if: runner.os == 'Windows'
         run: >

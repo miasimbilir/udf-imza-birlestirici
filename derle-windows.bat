@@ -27,7 +27,7 @@ for /f "delims=" %%v in ('python --version') do echo Python bulundu: %%v
 
 REM --- Gerekli paketler -------------------------------------------------
 echo.
-echo [1/4] Gerekli paketler kuruluyor (birkac dakika surebilir)...
+echo [1/5] Gerekli paketler kuruluyor (birkac dakika surebilir)...
 python -m pip install --quiet --upgrade pip pyinstaller tkinterdnd2
 if errorlevel 1 (
     echo [HATA] Paketler kurulamadi. Internet baglantinizi kontrol edin.
@@ -37,7 +37,7 @@ if errorlevel 1 (
 
 REM --- Tcl/Tk surumu ----------------------------------------------------
 echo.
-echo [2/4] Tcl/Tk surumu kontrol ediliyor...
+echo [2/5] Tcl/Tk surumu kontrol ediliyor...
 python -c "import tkinter; print('  Tcl/Tk', tkinter.TkVersion); exit(0 if tkinter.TkVersion>=8.6 else 1)"
 if errorlevel 1 (
     echo [HATA] Tcl/Tk surumu cok eski. Python'u python.org surumuyle kurun.
@@ -45,9 +45,19 @@ if errorlevel 1 (
     exit /b 1
 )
 
+REM --- Testler ----------------------------------------------------------
+echo.
+echo [3/5] Testler calistiriliyor...
+python -m unittest discover -s testler
+if errorlevel 1 (
+    echo [HATA] Testler basarisiz oldu; exe uretilmedi. Yukaridaki mesajlari inceleyin.
+    pause
+    exit /b 1
+)
+
 REM --- Derle ------------------------------------------------------------
 echo.
-echo [3/4] Uygulama derleniyor...
+echo [4/5] Uygulama derleniyor...
 pyinstaller --noconfirm --clean --onefile --windowed ^
   --name "UDF Imza Birlestirici" --icon ikon\uygulama.ico ^
   --version-file surum_bilgisi.txt ^
@@ -65,7 +75,7 @@ if errorlevel 1 (
 
 REM --- Sinama -----------------------------------------------------------
 echo.
-echo [4/4] Uretilen dosya sinaniyor...
+echo [5/5] Uretilen dosya sinaniyor...
 if exist sinama.txt del sinama.txt
 start /wait "" "dist\UDF Imza Birlestirici.exe" --sinama --rapor sinama.txt
 if not exist sinama.txt (

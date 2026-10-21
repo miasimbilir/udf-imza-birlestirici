@@ -14,11 +14,13 @@ Tcl/Tk 8.6+ gerekir — python.org kurulumu bunu zaten getirir.
 DERLEME
 -------
 Klasörde derle-windows.bat dosyasını çalıştırın. Betik sırasıyla:
-paketleri kurar, derler, üretilen exe'yi sınar.
+paketleri kurar, testleri çalıştırır, derler, üretilen exe'yi sınar.
+Testler geçmezse exe üretilmez.
 
 Elle yapmayı tercih ederseniz:
 
     python -m pip install --upgrade pip pyinstaller tkinterdnd2
+    python -m unittest discover -s testler
 
     pyinstaller --noconfirm --clean --onefile --windowed ^
       --name "UDF Imza Birlestirici" --icon ikon\uygulama.ico ^
@@ -71,8 +73,9 @@ NOTLAR
 · Exe imzalanmamıştır; SmartScreen uyarısı çıkar ("Ek bilgi" >
   "Yine de çalıştır"). PyInstaller çıktıları bazı antivirüslerde
   yanlış pozitif verebilir.
-· Program internete bağlanmaz. Derleme sırasında yalnızca paket
-  indirmek için internet gerekir.
+· Program yalnızca Hakkında > "Güncellemeleri kontrol et" düğmesine
+  basıldığında internete çıkar (yalnız son sürüm numarasını sorar).
+  Derleme sırasında paket indirmek için internet gerekir.
 · Sorun çıkarsa hata çıktısını iletin.
 
 

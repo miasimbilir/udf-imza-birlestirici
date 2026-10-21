@@ -62,7 +62,8 @@ sistemi uyarı gösterir:
 SORUN OLURSA
 Programı komut satırından şu şekilde çalıştırırsanız ayrıntılı çıktı verir:
 
-  Windows : "UDF Imza Birlestirici.exe" --sinama dosya1.udf dosya2.udf
+  Windows : "UDF Imza Birlestirici.exe" --sinama --rapor sonuc.txt dosya1.udf dosya2.udf
+            (Windows'ta program konsola yazmaz; sonuç sonuc.txt dosyasına yazılır.)
   macOS   : "UDF Imza Birlestirici.app/Contents/MacOS/UDF Imza Birlestirici" --sinama dosya1.udf dosya2.udf
 
 Dosya vermeden --sinama yazarsanız program kendi bütünlüğünü sınar.

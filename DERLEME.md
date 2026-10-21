@@ -31,13 +31,16 @@ pyinstaller --noconfirm --clean --onefile --windowed ^
 
 4. Sonuç: `dist\UDF Imza Birlestirici.exe` — tek dosya, kurulum gerekmez.
 
-5. **Çalıştığını doğrulayın:**
+5. **Çalıştığını doğrulayın** (exe'nin konsolu olmadığı için sonuç dosyaya yazılır):
 
 ```bat
-"dist\UDF Imza Birlestirici.exe" --sinama
+"dist\UDF Imza Birlestirici.exe" --sinama --rapor sinama.txt
+type sinama.txt
 ```
 
 `SINAMA TAMAM` yazmalı. Yazmıyorsa exe'yi dağıtmayın.
+
+Bu adımların hepsini (testler dahil) `derle-windows.bat` sırayla yapar.
 
 ## macOS — .app paketi
 
@@ -59,7 +62,7 @@ brew install python-tk@3.13
   --hidden-import udf_ortak --hidden-import birlestirici \
   uygulama.py
 
-python plist_yaz.py          # sürüm ve telif bilgisini Info.plist'e göm
+/tmp/derleme/bin/python plist_yaz.py   # sürüm ve telif bilgisini Info.plist'e göm
 ```
 
 Sonuç: `dist/UDF Imza Birlestirici.app`
@@ -78,12 +81,30 @@ paketi dağıtmamalısınız.
 
 ## GitHub üzerinden otomatik derleme
 
-`.github/workflows/derle.yml` hazırdır. Klasörü bir GitHub deposuna
-yüklerseniz, Windows ve iki macOS mimarisi için paketleri kendisi derler,
-her birini yayımlamadan önce sınamadan geçirir ve Sürümler sayfasına koyar.
+`.github/workflows/derle.yml` iki macOS mimarisi (Apple Silicon ve Intel) için
+paketleri derler; derlemeden önce testleri, derledikten sonra `--sinama`'yı
+çalıştırır.
 
-Depoyu yükledikten sonra elle başlatmak için: **Actions → Uygulamayı derle →
-Run workflow**. Sürüm oluşturmak için `s1.0` gibi bir etiket gönderin.
+Windows bu akışta **yoktur**: bu hesapta Windows runner alınamıyor (iş kuyrukta
+bekleyip iptal ediliyor). Windows exe'si Windows bir bilgisayarda
+`derle-windows.bat` ile elle derlenir. Adımlar akış dosyasında yerinde duruyor;
+runner çalışır hâle gelirse matristeki satır geri açılır.
+
+Elle başlatmak için: **Actions → Uygulamayı derle → Run workflow**
+(ya da `gh workflow run derle.yml`). `s` ile başlayan bir etiket (`s1.1`)
+gönderilirse akış sürüm de oluşturur.
+
+## Testler
+
+```bash
+python3 -m unittest discover -s testler -v
+```
+
+Yalnız Python standart kütüphanesini kullanır; Windows'ta da çalışır. Sekiz
+güvenlik kapısını, imza doğrulamayı (NULL'suz DigestInfo dahil), bozuk ve
+kötü niyetli dosyaları ve güvenli yazmayı sınar. Veriler `testler/veri/`
+içindedir ve **sentetiktir**; yeniden üretmek için `python3 testler/veri_uret.py`
+(openssl 3+ gerekir).
 
 ## Kod imzalama
 

@@ -9,4 +9,6 @@ sinama.txt
 # Deneme belgeleri ve raporlar kişisel veri içerir — asla depoya girmesin
 *.udf
 *.sgn
+# testlerin SENTETİK verisi (gerçek kişi/belge yok; bkz. testler/veri_uret.py)
+!testler/veri/*.udf
 *denetim kaydi*.txt
