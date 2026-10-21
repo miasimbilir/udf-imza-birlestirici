@@ -3,8 +3,8 @@
 # PyInstaller'a --version-file surum_bilgisi.txt ile verilir.
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 0, 0, 0),
-    prodvers=(1, 0, 0, 0),
+    filevers=(1, 1, 0, 0),
+    prodvers=(1, 1, 0, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -18,12 +18,12 @@ VSVersionInfo(
         '041f04b0',                      # 041f = Türkçe, 04b0 = Unicode
         [StringStruct('CompanyName', 'Av. Arb. Mevlana İbrahim Asım Bilir'),
          StringStruct('FileDescription', 'UDF İmza Birleştirici'),
-         StringStruct('FileVersion', '1.0.0.0'),
+         StringStruct('FileVersion', '1.1.0.0'),
          StringStruct('InternalName', 'UDF Imza Birlestirici'),
          StringStruct('LegalCopyright', '© 2026 Av. Arb. Mevlana İbrahim Asım Bilir'),
          StringStruct('OriginalFilename', 'UDF Imza Birlestirici.exe'),
          StringStruct('ProductName', 'UDF İmza Birleştirici'),
-         StringStruct('ProductVersion', '1.0.0.0'),
+         StringStruct('ProductVersion', '1.1.0.0'),
          StringStruct('Comments',
                       'Aynı belgenin ayrı ayrı e-imzalanmış nüshalarındaki '
                       'imzaları tek dosyada toplar. Bağımsız bir yardımcı '

@@ -24,7 +24,7 @@ if getattr(sys, "frozen", False):                   # PyInstaller paketi
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from birlestirici import denetle, incele_tek
-from udf_ortak import TSI, Durdur
+from udf_ortak import TSI, Durdur, guvenli_yaz
 
 # Sürükle-bırak Tkinter'da yerleşik değil; paket yoksa düğmeyle devam edilir.
 try:
@@ -34,7 +34,7 @@ except Exception:
     TEMEL_PENCERE, SURUKLENEBILIR = tk.Tk, False
 
 UYGULAMA_ADI = "UDF İmza Birleştirici"
-SURUM = "1.0"
+SURUM = "1.1"
 YAZAR = "Av. Arb. Mevlana İbrahim Asım Bilir"
 YAZAR_EK = "av.ibrahimbilir@gmail.com"
 TELIF = "© 2026 Av. Arb. Mevlana İbrahim Asım Bilir"
@@ -64,6 +64,15 @@ def son_surumu_sor():
         "Accept": "application/vnd.github+json"})
     with urllib.request.urlopen(istek, timeout=8) as yanit:
         return json.load(yanit).get("tag_name") or ""
+
+
+def ayni_dosya(a, b):
+    """İki yol aynı dosyayı mı gösteriyor? (macOS NFD, büyük-küçük harf, bağlar)"""
+    try:
+        return os.path.samefile(a, b)
+    except OSError:                                 # hedef henüz yok
+        return False
+
 
 ACIK_TEMA = {"yesil": "#127a3d", "kirmizi": "#b4232a", "soluk": "#6b7280",
              "cizgi": "#d7d9dd", "kagit": "#ffffff", "yazi": "#1c1f24",
@@ -384,6 +393,12 @@ class Uygulama(TEMEL_PENCERE):
                 self.hata_ayrinti = str(e)
                 self.durum_goster(False, "Okunamadı", str(e).split("\n")[0])
                 self.btn_ayrinti.pack(pady=(0, 6))
+            except Exception as e:
+                self.tek_sonuc = None
+                self.hata_ayrinti = f"{type(e).__name__}: {e}"
+                self.durum_goster(False, "Beklenmeyen hata",
+                                  "Belge incelenemedi. Ayrıntı için düğmeye basın.")
+                self.btn_ayrinti.pack(pady=(0, 6))
             else:
                 t = self.tek_sonuc
                 n = len(t["imzacilar"])
@@ -396,6 +411,9 @@ class Uygulama(TEMEL_PENCERE):
                      if t["gecerli"] else ""))
                 if t["gecerli"]:
                     self.rapor_cerceve.pack()
+                else:                                # hangi imza, neden: raporda
+                    self.hata_ayrinti = tek_dosya_raporu(t)
+                    self.btn_ayrinti.pack(pady=(0, 6))
             finally:
                 self.config(cursor="")
             return
@@ -435,11 +453,20 @@ class Uygulama(TEMEL_PENCERE):
             filetypes=[("UYAP belgesi", "*.udf")])
         if not yol:
             return
+        if any(ayni_dosya(yol, k) for k in self.yollar):
+            messagebox.showerror(
+                "Kaydedilemedi",
+                "Birleşik belge, birleştirilen nüshalardan birinin üzerine yazılamaz. "
+                "Kaynak nüshalar delil olarak saklanmalıdır.\n\nBaşka bir ad seçin.",
+                parent=self)
+            return
         try:
-            with open(yol, "wb") as f:
-                f.write(self.sonuc["baytlar"])
+            guvenli_yaz(yol, self.sonuc["baytlar"])
         except OSError as e:
-            messagebox.showerror("Kaydedilemedi", str(e), parent=self)
+            messagebox.showerror(
+                "Kaydedilemedi",
+                f"Belge kaydedilemedi; hedefteki dosyaya dokunulmadı.\n\n{e}",
+                parent=self)
             return
 
         satirlar = [os.path.basename(yol)]
@@ -447,8 +474,8 @@ class Uygulama(TEMEL_PENCERE):
             kok = yol[:-4] if yol.lower().endswith(".udf") else yol
             kayit_yolu = kok + " - denetim kaydi.txt"
             try:
-                with open(kayit_yolu, "w", encoding="utf-8") as f:
-                    f.write(denetim_raporu(self.sonuc) + "\n")
+                guvenli_yaz(kayit_yolu,
+                            (denetim_raporu(self.sonuc) + "\n").encode("utf-8"))
                 satirlar.append(os.path.basename(kayit_yolu))
             except OSError as e:
                 messagebox.showwarning(
@@ -574,6 +601,24 @@ def sinama(yollar=None, rapor_yolu=None):
         metin = " ".join(str(x) for x in p)
         satirlar.append(metin)
         print(metin)
+    try:
+        return _sinama(yollar, yaz)
+    except Durdur as e:
+        yaz("DURDURULDU: " + str(e).replace("\n", " "))
+        return 1
+    except Exception as e:
+        yaz(f"SINAMA BAŞARISIZ — {type(e).__name__}: {e}")
+        return 2
+    finally:
+        if rapor_yolu:
+            try:
+                with open(rapor_yolu, "w", encoding="utf-8") as f:
+                    f.write("\n".join(satirlar) + "\n")
+            except OSError as e:
+                print("rapor yazılamadı:", e, file=sys.stderr)
+
+
+def _sinama(yollar, yaz):
     from udf_ortak import zaman_coz, zaman_yaz
     assert zaman_yaz(zaman_coz("260727191600Z")).startswith("27.07.2026 22:16"), \
         "TSİ dönüşümü hatalı"
@@ -596,12 +641,6 @@ def sinama(yollar=None, rapor_yolu=None):
             dnd = f"KURULAMADI ({type(e).__name__})"
     yaz(f"SINAMA TAMAM — modüller yüklendi, çekirdek çalışıyor "
         f"(Tcl/Tk {tk.TkVersion}, sürükle-bırak: {dnd}).")
-    if rapor_yolu:
-        try:
-            with open(rapor_yolu, "w", encoding="utf-8") as f:
-                f.write("\n".join(satirlar) + "\n")
-        except OSError as e:
-            print("rapor yazılamadı:", e, file=sys.stderr)
     return 0
 
 
