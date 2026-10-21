@@ -12,10 +12,9 @@ SHA-256 ozetidir; hicbir imza digerini kapsamaz (counterSignature yok).
 Bu yuzden ayri ayri imzalanmis iki nushanin SignerInfo kumeleri birlestirilebilir
 ve imzalarin hicbiri bozulmaz.
 
-Bu modul yalniz ayristirir ve yeniden kurar; imza dogrulamasini openssl yapar
-(bkz. imza_birlestir.py).
+Bu modul yalniz ayristirir ve yeniden kurar; imza dogrulamasi saf Python ile
+imza_dogrula.py'de yapilir.
 """
-import hashlib
 
 
 # --------------------------------------------------------------------------
@@ -42,8 +41,12 @@ def coz_tlv(b, off=0, son=None):
         u = b[i]; i += 1
         if u & 0x80:                            # uzun bicim uzunluk
             n = u & 0x7F
+            if n == 0 or i + n > son:           # BER belirsiz uzunluk DER'de yok
+                raise ValueError("DER: gecersiz uzunluk alani")
             u = int.from_bytes(b[i:i + n], "big")
             i += n
+        if i + u > son:                         # kesik ya da tasan veri
+            raise ValueError("DER: uzunluk veriyi asiyor")
         out.append((t, tagno, bas, i, i + u))
         i += u
     return out
@@ -96,7 +99,6 @@ OID = {
     "2.5.4.3": "CN", "2.5.4.5": "serialNumber", "2.5.4.10": "O",
     "2.5.4.12": "title", "2.5.4.6": "C", "2.5.4.7": "L",
 }
-OZET_ADI = {"sha1": "sha1", "sha256": "sha256", "sha384": "sha384", "sha512": "sha512"}
 
 
 def ad(o):
@@ -247,117 +249,6 @@ def imza_bilgi(si):
     out["anahtar"] = ("k:" + out["skid"] if "skid" in out
                       else out["issuer_der"].hex() + "|" + format(out["seri"], "x"))
     return out
-
-
-def sertifika_esle(d):
-    """imza -> sertifika eslestirmesi. (issuer, seri) uzerinden."""
-    dizin = {}
-    for c in d["sertifikalar"]:
-        s = coz_tlv(c)[0]
-        bilgi = sertifika_bilgi(c, s)
-        dizin[(bilgi["issuer_der"], bilgi["seri"])] = bilgi
-    ciftler = []
-    for si in d["imzalar"]:
-        bi = imza_bilgi(si)
-        cert = dizin.get((bi.get("issuer_der"), bi.get("seri")))
-        ciftler.append((bi, cert))
-    return ciftler
-
-
-def ozet_dogrula(bi, icerik):
-    """SignerInfo'nun messageDigest'i verilen icerigin ozeti mi?"""
-    alg = OZET_ADI.get(bi["ozet_alg"])
-    if not alg or "ozet" not in bi:
-        return False
-    return hashlib.new(alg, icerik).hexdigest() == bi["ozet"]
-
-
-# --------------------------------------------------------------------------
-# Standart disi ama gecerli RSA imzalari
-# --------------------------------------------------------------------------
-# Bazi imzalama araclari PKCS#1 v1.5 DigestInfo'sundaki NULL parametresini
-# yazmaz:  standart 3031300d0609<OID>0500 0420<ozet>
-#          eksik    302f300b0609<OID>     0420<ozet>
-# openssl bunu reddeder, UYAP kabul eder; imza aslinda gecerlidir.
-# Asagidaki dogrulayici dolguyu ve tam kaplamayi KATI denetler, yalniz eksik
-# NULL'a izin verir.
-OZET_OID = {
-    "sha1": "1.3.14.3.2.26",
-    "sha256": "2.16.840.1.101.3.4.2.1",
-    "sha384": "2.16.840.1.101.3.4.2.2",
-    "sha512": "2.16.840.1.101.3.4.2.3",
-}
-
-
-def rsa_acik_anahtar(sertifika):
-    """Sertifikadan (n, e) cikar. RSA degilse None."""
-    s = coz_tlv(sertifika)[0]
-    tbs = coz_tlv(sertifika, s[3], s[4])[0]
-    f = coz_tlv(sertifika, tbs[3], tbs[4])
-    i = 1 if f[0][0] == 0xA0 else 0
-    spki = f[i + 5]
-    parcalar = coz_tlv(sertifika, spki[3], spki[4])
-    alg = coz_tlv(sertifika, parcalar[0][3], parcalar[0][4])
-    if oid_metin(sertifika[alg[0][3]:alg[0][4]]) != "1.2.840.113549.1.1.1":
-        return None
-    bit = sertifika[parcalar[1][3]:parcalar[1][4]][1:]     # kullanilmayan-bit bayti
-    kf = coz_tlv(bit)
-    rf = coz_tlv(bit, kf[0][3], kf[0][4])
-    return (int.from_bytes(bit[rf[0][3]:rf[0][4]], "big"),
-            int.from_bytes(bit[rf[1][3]:rf[1][4]], "big"))
-
-
-def rsa_gevsek_dogrula(sertifika, imza, veri, ozet_adi):
-    """NULL'suz DigestInfo'ya izin veren KATI PKCS#1 v1.5 dogrulamasi."""
-    ne = rsa_acik_anahtar(sertifika)
-    if not ne:
-        return False
-    n, e = ne
-    k = (n.bit_length() + 7) // 8
-    if len(imza) != k:
-        return False
-    kutu = pow(int.from_bytes(imza, "big"), e, n).to_bytes(k, "big")
-
-    if kutu[0] != 0x00 or kutu[1] != 0x01:
-        return False
-    i = 2
-    while i < len(kutu) and kutu[i] == 0xFF:
-        i += 1
-    if i - 2 < 8 or kutu[i] != 0x00:
-        return False
-    di = kutu[i + 1:]
-
-    try:
-        df = coz_tlv(di)
-        if len(df) != 1 or df[0][4] != len(di):          # fazladan bayt olamaz
-            return False
-        ic = coz_tlv(di, df[0][3], df[0][4])
-        if len(ic) != 2:
-            return False
-        alg = coz_tlv(di, ic[0][3], ic[0][4])
-        if len(alg) > 2:
-            return False
-        if len(alg) == 2:                                 # varsa tam olarak NULL
-            if alg[1][0] != 0x05 or alg[1][4] != alg[1][3]:
-                return False
-        if oid_metin(di[alg[0][3]:alg[0][4]]) != OZET_OID.get(ozet_adi):
-            return False
-        bildirilen = di[ic[1][3]:ic[1][4]]
-    except Exception:
-        return False
-    return bildirilen == hashlib.new(ozet_adi, veri).digest()
-
-
-def imzali_alanlar_verisi(si):
-    """Imzalanan bayt dizisi: signedAttrs'in DER'i, [0] yerine SET OF (0x31)."""
-    b = si
-    s = coz_tlv(b)[0]
-    f = coz_tlv(b, s[3], s[4])
-    if f[3][0] != 0xA0:
-        return None, None
-    veri = bytearray(b[f[3][2]:f[3][4]])
-    veri[0] = 0x31
-    return bytes(veri), b[f[5][3]:f[5][4]]                 # (veri, imza)
 
 
 def birlestir(cozulmusler, sirala="zaman"):

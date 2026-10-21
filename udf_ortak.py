@@ -17,18 +17,30 @@ class Durdur(Exception):
     """Denetim kapisi gecilemedi; islem guvenli sekilde durduruldu."""
 
 
+# Arsivdeki en buyuk UDF birkac MB; bu sinir yalniz bozuk/kotu niyetli
+# (zip bombasi) dosyaya karsi.
+AZAMI_ACIK_BOYUT = 300 * 1024 * 1024
+
+
 def udf_oku(yol):
     """UDF'ten content.xml, sign.sgn ve tum ZIP uyelerini dondur."""
+    ad = os.path.basename(yol)
     if not os.path.exists(yol):
         raise Durdur(f"dosya bulunamadı: {yol}")
     try:
         with zipfile.ZipFile(yol) as z:
             uyeler = z.namelist()
+            if len(uyeler) != len(set(uyeler)):
+                # Python son girdiyi, baska okuyucu ilkini okuyabilir: reddedilir.
+                raise Durdur(f"{ad}: dosyada aynı adlı birden fazla bölüm var — "
+                             "bu geçerli bir UDF belgesi değil.")
             if "content.xml" not in uyeler:
-                raise Durdur(f"{os.path.basename(yol)}: content.xml yok — "
+                raise Durdur(f"{ad}: content.xml yok — "
                              "bu geçerli bir UDF belgesi değil.")
             if "sign.sgn" not in uyeler:
-                raise Durdur(f"{os.path.basename(yol)}: belge imzasız (sign.sgn yok).")
+                raise Durdur(f"{ad}: belge imzasız (sign.sgn yok).")
+            if sum(z.getinfo(n).file_size for n in uyeler) > AZAMI_ACIK_BOYUT:
+                raise Durdur(f"{ad}: dosya olağandışı büyük; açılmadı.")
             return {
                 "yol": yol,
                 "content": z.read("content.xml"),
@@ -37,7 +49,13 @@ def udf_oku(yol):
                 "uyeler": {n: (z.read(n), z.getinfo(n).compress_type) for n in uyeler},
             }
     except zipfile.BadZipFile:
-        raise Durdur(f"{os.path.basename(yol)}: dosya açılamadı (bozuk olabilir).")
+        raise Durdur(f"{ad}: dosya açılamadı (bozuk olabilir).")
+    except Durdur:
+        raise
+    except OSError as e:
+        raise Durdur(f"{ad}: dosya okunamadı ({e.strerror or e}).")
+    except Exception as e:                          # sifreli, desteklenmeyen sikistirma…
+        raise Durdur(f"{ad}: dosya açılamadı ({type(e).__name__}).")
 
 
 def udf_baytlari(asil, yeni_sgn):
@@ -49,6 +67,36 @@ def udf_baytlari(asil, yeni_sgn):
                        yeni_sgn if ad == "sign.sgn" else veri,
                        compress_type=yontem)
     return tampon.getvalue()
+
+
+def guvenli_yaz(yol, baytlar):
+    """Dosyayi yarim birakmadan yazar: once ayni klasorde gecici dosyaya,
+    geri okuyup karsilastirir, sonra tek adimda yerine koyar.
+
+    Dogrudan yazmada (ozellikle Drive/OneDrive klasorlerinde) yazma yarida
+    kalirsa hedefte 0 baytlik ya da kesik bir dosya kalir; burada kalmaz.
+    """
+    import tempfile
+    klasor = os.path.dirname(os.path.abspath(yol))
+    fd, gecici = tempfile.mkstemp(dir=klasor, prefix=".udf-imza-", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(baytlar)
+            f.flush()
+            os.fsync(f.fileno())
+        with open(gecici, "rb") as f:
+            if f.read() != baytlar:
+                raise OSError("yazılan dosya geri okunduğunda aynı çıkmadı")
+        maske = os.umask(0)                 # mkstemp 0600 acar; normal izin ver
+        os.umask(maske)
+        os.chmod(gecici, 0o666 & ~maske)
+        os.replace(gecici, yol)
+    except BaseException:
+        try:
+            os.remove(gecici)
+        except OSError:
+            pass
+        raise
 
 
 def zaman_coz(s):

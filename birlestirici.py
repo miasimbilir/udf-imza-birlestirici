@@ -9,7 +9,9 @@ imzalanmış nüshaların imza kümeleri birleştirilebilir ve hiçbir imza bozu
 Sekiz güvenlik kapısı; hepsi geçilmeden dosya üretilmez.
 """
 import hashlib
+import io
 import os
+import zipfile
 
 import cms_imza as cms
 import imza_dogrula as dog
@@ -21,7 +23,7 @@ ADIMLAR = [
     ("imza",  "Tüm imzalar kriptografik olarak geçerli"),
     ("bag",   "İmzalar bu belgenin özetine bağlı"),
     ("capa",  "Ortak (çapa) imza mevcut"),
-    ("muk",   "Mükerrer imzacı yok"),
+    ("muk",   "Mükerrer imzacı ve nüsha yok"),
     ("gecer", "Sertifikalar imza anında geçerliydi"),
     ("son",   "Birleşik belge yeniden doğrulandı"),
 ]
@@ -31,8 +33,34 @@ def _sertifika_dizini(sd):
     dizin = {}
     for c in sd["sertifikalar"]:
         b = cms.sertifika_bilgi(c, cms.coz_tlv(c)[0])
-        dizin[(b["issuer_der"], b["seri"])] = (c, b)
+        anahtar = (b["issuer_der"], b["seri"])
+        if anahtar in dizin and dizin[anahtar][0] != c:
+            # Imza (issuer, seri) ile sertifikaya baglanir; ayni kimlikli iki
+            # farkli sertifika hangisinin kullanilacagini belirsiz kilar.
+            raise Durdur(f"Aynı seri numaralı iki farklı sertifika var ({b['ad']}). "
+                         "Nüshalardan biri değiştirilmiş olabilir.")
+        dizin[anahtar] = (c, b)
     return dizin
+
+
+def _imza_coz(u):
+    """sign.sgn'i cozer; bozuk yapida anlasilir bir Durdur verir."""
+    ad = os.path.basename(u["yol"])
+    try:
+        sd = cms.coz(u["sgn"])
+        for si in sd["imzalar"]:
+            cms.imza_bilgi(si)
+        for c in sd["sertifikalar"]:
+            cms.sertifika_bilgi(c, cms.coz_tlv(c)[0])
+    except (ValueError, IndexError, KeyError, UnicodeError):
+        raise Durdur(f"{ad}: imza bölümü (sign.sgn) çözümlenemedi — dosya bozuk "
+                     "olabilir ya da UYAP dışı bir araçla üretilmiş olabilir.")
+    if not sd["imzalar"]:
+        raise Durdur(f"{ad}: belgede imza yok.")
+    if not sd["detached"]:
+        raise Durdur(f"{ad}: imza belgeye gömülü (ayrık değil). "
+                     "Bu araç yalnızca UYAP'ın ürettiği ayrık imzaları işler.")
+    return sd
 
 
 def incele_tek(yol):
@@ -41,7 +69,7 @@ def incele_tek(yol):
     Birleştirme yapmaz. Döner: {ad, imzacilar, ozet, gecerli, sebep}
     """
     u = udf_oku(yol)
-    sd = cms.coz(u["sgn"])
+    sd = _imza_coz(u)
     dizin = _sertifika_dizini(sd)
     imzacilar, gecerli, sebep = [], True, ""
     for si in sd["imzalar"]:
@@ -89,12 +117,12 @@ def denetle(yollar, capa_tckn="", bildir=None):
     bildir("oku", "calisiyor", "okunuyor…")
     nushalar = []
     for y in yollar:
-        u = udf_oku(y)
-        u["sd"] = cms.coz(u["sgn"])
-        if not u["sd"]["detached"]:
-            bildir("oku", "hata", f"{os.path.basename(y)}: imza belgeye gömülü")
-            raise Durdur(f"{os.path.basename(y)}: imza belgeye gömülü (ayrık değil). "
-                         "Bu araç yalnızca UYAP'ın ürettiği ayrık imzaları birleştirir.")
+        try:
+            u = udf_oku(y)
+            u["sd"] = _imza_coz(u)
+        except Durdur as e:
+            bildir("oku", "hata", str(e).split("\n")[0])
+            raise
         nushalar.append(u)
     bildir("oku", "tamam", f"{len(nushalar)} nüsha · " +
            " · ".join(f"{len(u['sd']['imzalar'])} imza" for u in nushalar))
@@ -164,18 +192,36 @@ def denetle(yollar, capa_tckn="", bildir=None):
         bildir("capa", "tamam", ", ".join(c["ad"] for c in ortak_certler) +
                " — her nüshada ortak")
 
-    # ---- KAPI 5: mükerrer imzacı -------------------------------------------
+    # ---- KAPI 5: mükerrer imzacı ve mükerrer nüsha -------------------------
     bildir("muk", "calisiyor", "")
-    kisiler = {}
+    kisiler, adlar = {}, {}
     for t in tum:
-        kisiler.setdefault(t["cert"].get("tckn") or t["cert"]["ad"], set()).add(
-            t["bi"]["anahtar"])
-    coklu = [k for k, v in kisiler.items() if len(v) > 1]
+        kim = t["cert"].get("tckn") or t["cert"]["ad"]
+        kisiler.setdefault(kim, set()).add(t["bi"]["anahtar"])
+        adlar[kim] = t["cert"]["ad"] + (f" (T.C. {t['cert']['tckn']})"
+                                        if t["cert"].get("tckn") else "")
+    coklu = [adlar[k] for k, v in kisiler.items() if len(v) > 1]
     if coklu:
         bildir("muk", "hata", "aynı kişi birden çok sertifikayla imzalamış")
         raise Durdur("Aynı kişi farklı sertifikalarla imzalamış: " + ", ".join(coklu) +
                      "\n\nNüshaların doğru dosyalar olduğunu kontrol edin.")
-    bildir("muk", "tamam", f"{len(kisiler)} ayrı imzacı")
+    # Yeni imza katmayan nüsha: ayni dosya iki kez eklenmis ya da taraf belgeyi
+    # imzalamadan geri gondermis. Birlesik belgede o tarafin imzasi eksik kalir.
+    katkisiz = []
+    for i, u in enumerate(nushalar):
+        digerleri = set().union(*(k for j, k in enumerate(kumeler) if j != i))
+        if kumeler[i] <= digerleri:
+            kimler = sorted({t["cert"]["ad"] for t in tum if t["u"] is u})
+            katkisiz.append(f"“{os.path.basename(u['yol'])}” ({', '.join(kimler)})")
+    if katkisiz:
+        bildir("muk", "hata", "yeni imza katmayan nüsha var")
+        raise Durdur(
+            "Şu nüsha birleşik belgeye yeni imza katmıyor:\n\n"
+            + "\n".join(katkisiz) +
+            "\n\nBu nüshadaki imzaların tamamı diğer nüshalarda zaten var. Aynı dosya "
+            "iki kez eklenmiş ya da taraf belgeyi imzalamadan geri göndermiş olabilir. "
+            "Nüshayı listeden çıkarın ya da imzalı nüshayı isteyin.")
+    bildir("muk", "tamam", f"{len(kisiler)} ayrı imzacı · her nüsha yeni imza katıyor")
 
     # ---- KAPI 6: sertifika imza anında geçerli miydi ------------------------
     bildir("gecer", "calisiyor", "")
@@ -213,13 +259,19 @@ def denetle(yollar, capa_tckn="", bildir=None):
             "zaman": zaman_yaz(zaman_coz(bi.get("zaman"))),
             "capa": bi["anahtar"] in ortak, "disi": disi,
         })
+    baytlar = udf_baytlari(asil, yeni_sgn)
+    with zipfile.ZipFile(io.BytesIO(baytlar)) as z:
+        if (z.testzip() is not None or z.read("sign.sgn") != yeni_sgn or
+                hashlib.sha256(z.read("content.xml")).hexdigest() != icerik_ozeti):
+            bildir("son", "hata", "üretilen dosya doğrulanamadı")
+            raise Durdur("Birleşik belge doğrulanamadı; dosya üretilmedi.")
     bildir("son", "tamam", f"{len(imzacilar)} imzanın tamamı birleşik belgede geçerli")
 
     ad = os.path.basename(asil["yol"])
     if ad.lower().endswith(".udf"):
         ad = ad[:-4]
     return {
-        "baytlar": udf_baytlari(asil, yeni_sgn),
+        "baytlar": baytlar,
         "ad": ad + " (birleşik imzalı).udf",
         "imzacilar": imzacilar,
         "uyarilar": list(dict.fromkeys(uyarilar)),

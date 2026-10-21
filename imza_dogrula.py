@@ -228,12 +228,21 @@ def imza_dogrula(bi, sertifika_ham, content):
         return False, False, f"desteklenmeyen imza algoritması ({bi.get('imza_alg_oid')})"
     tip, ozet = alg
     ozet = ozet or bi["ozet_alg"]
-    if ozet not in OZET_OID:
+    if ozet not in OZET_OID or bi["ozet_alg"] not in OZET_OID:
         return False, False, "özet algoritması çözülemedi"
 
     veri, imza = imzali_alanlar_verisi(bi["ham"])
-    if veri is None:
+    imzali_alanli = veri is not None
+    if not imzali_alanli:
         veri = content
+    else:
+        # signedAttrs varsa imza belgeye YALNIZ messageDigest uzerinden baglanir
+        # (RFC 5652 m.5.3): tam olarak bir tane olmali.
+        alanlar = bi["imzali_alanlar"]
+        if alanlar.count("messageDigest") != 1 or not bi.get("ozet"):
+            return False, False, "imzada belge özeti (messageDigest) yok ya da birden fazla"
+        if alanlar.count("contentType") > 1:
+            return False, False, "imzada birden fazla içerik türü var"
     spki = spki_cikar(sertifika_ham)
 
     if tip == "RSA":
@@ -244,7 +253,7 @@ def imza_dogrula(bi, sertifika_ham, content):
         return False, False, "imza geçersiz — belge imzalandıktan sonra değişmiş olabilir"
 
     # signedAttrs kullanildiysa messageDigest gercekten icerigin ozeti mi?
-    if bi.get("ozet"):
+    if imzali_alanli:
         if hashlib.new(bi["ozet_alg"], content).hexdigest() != bi["ozet"]:
             return False, False, "imza bu belgenin içeriğine ait değil"
     icerik_turu = bi.get("icerik_turu")
