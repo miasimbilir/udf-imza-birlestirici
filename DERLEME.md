@@ -65,6 +65,12 @@ brew install python-tk@3.13
 /tmp/derleme/bin/python plist_yaz.py   # sürüm ve telif bilgisini Info.plist'e göm
 ```
 
+Ardından `.github/workflows/derle.yml` içindeki **"macOS — yabancı mimariyi çıkar,
+imzayı yenile"** adımındaki komutları çalıştırın. tkinterdnd2 bütün platformların
+kütüphanelerini pakete koyar; Apple Silicon paketinde Intel kütüphanesi kalırsa
+macOS 27 "bir sonraki büyük sürümde açılmayacak bir bileşen" uyarısı gösterir.
+Info.plist'e yazmak da PyInstaller'ın ad-hoc imzasını bozar; adım imzayı yeniler.
+
 Sonuç: `dist/UDF Imza Birlestirici.app`
 
 Doğrulama:

@@ -104,6 +104,27 @@ jobs:
         if: runner.os == 'macOS'
         run: python plist_yaz.py
 
+      # tkinterdnd2 bütün platformların kütüphanelerini getirir. Apple Silicon
+      # paketinde Intel kütüphanesi kalınca macOS 27 "macOS 28'de açılmayacak
+      # bir bileşen içeriyor" uyarısı veriyor; yalnız bu mimarininkiler kalır.
+      # Info.plist'e yazmak ve dosya silmek PyInstaller'ın ad-hoc imzasını
+      # bozar; imza yenilenip doğrulanır.
+      - name: macOS — yabancı mimariyi çıkar, imzayı yenile
+        if: runner.os == 'macOS'
+        run: |
+          app="dist/UDF Imza Birlestirici.app"
+          case "$(uname -m)" in arm64) tut=osx-arm64 ;; *) tut=osx-x64 ;; esac
+          find "$app" -type d -name tkdnd | while read -r d; do
+            for k in "$d"/*; do
+              ad=$(basename "$k")
+              [ "$ad" = "$tut" ] || [ "$ad" = "$tut-tcl9" ] || rm -rf "$k"
+            done
+          done
+          codesign --force --deep --sign - "$app"
+          codesign --verify --deep --strict "$app"
+          yabanci=$(find "$app" -type f -exec file {} + | grep Mach-O | grep -v "$(uname -m)" || true)
+          [ -z "$yabanci" ] || { echo "yabanci mimari kaldi:"; echo "$yabanci"; exit 1; }
+
       # Derlenen uygulama gerçekten çalışıyor mu? Kendi sınamasını koştur.
       # --windowed derlenen exe'nin KONSOLU YOKTUR; çıktı boruya değil dosyaya
       # yazdırılır ve süreç bitene kadar beklenir.
