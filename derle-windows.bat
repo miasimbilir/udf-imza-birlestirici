@@ -12,8 +12,16 @@ echo.
 cd /d "%~dp0"
 
 REM --- Python var mi? ---------------------------------------------------
+REM "python" Microsoft Store kisayoluna dusebilir (9009 hatasi); python.org
+REM kurulumu PATH'te degilse "py" baslaticisi yine bulur.
+set "PY="
 python --version >nul 2>&1
-if errorlevel 1 (
+if not errorlevel 1 set "PY=python"
+if not defined PY (
+    py -3 --version >nul 2>&1
+    if not errorlevel 1 set "PY=py -3"
+)
+if not defined PY (
     echo [HATA] Python bulunamadi.
     echo.
     echo   1. https://www.python.org/downloads/windows/ adresinden Python kurun
@@ -23,12 +31,12 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
-for /f "delims=" %%v in ('python --version') do echo Python bulundu: %%v
+for /f "delims=" %%v in ('%PY% --version') do echo Python bulundu: %%v  ^(%PY%^)
 
 REM --- Gerekli paketler -------------------------------------------------
 echo.
 echo [1/5] Gerekli paketler kuruluyor (birkac dakika surebilir)...
-python -m pip install --quiet --upgrade pip pyinstaller tkinterdnd2
+%PY% -m pip install --quiet --upgrade pip pyinstaller tkinterdnd2
 if errorlevel 1 (
     echo [HATA] Paketler kurulamadi. Internet baglantinizi kontrol edin.
     pause
@@ -38,7 +46,7 @@ if errorlevel 1 (
 REM --- Tcl/Tk surumu ----------------------------------------------------
 echo.
 echo [2/5] Tcl/Tk surumu kontrol ediliyor...
-python -c "import tkinter; print('  Tcl/Tk', tkinter.TkVersion); exit(0 if tkinter.TkVersion>=8.6 else 1)"
+%PY% -c "import tkinter; print('  Tcl/Tk', tkinter.TkVersion); exit(0 if tkinter.TkVersion>=8.6 else 1)"
 if errorlevel 1 (
     echo [HATA] Tcl/Tk surumu cok eski. Python'u python.org surumuyle kurun.
     pause
@@ -48,7 +56,7 @@ if errorlevel 1 (
 REM --- Testler ----------------------------------------------------------
 echo.
 echo [3/5] Testler calistiriliyor...
-python -m unittest discover -s testler
+%PY% -m unittest discover -s testler
 if errorlevel 1 (
     echo [HATA] Testler basarisiz oldu; exe uretilmedi. Yukaridaki mesajlari inceleyin.
     pause
@@ -58,7 +66,7 @@ if errorlevel 1 (
 REM --- Derle ------------------------------------------------------------
 echo.
 echo [4/5] Uygulama derleniyor...
-pyinstaller --noconfirm --clean --onefile --windowed ^
+%PY% -m PyInstaller --noconfirm --clean --onefile --windowed ^
   --name "UDF Imza Birlestirici" --icon ikon\uygulama.ico ^
   --version-file surum_bilgisi.txt ^
   --collect-all tkinterdnd2 ^
