@@ -207,17 +207,19 @@ def denetle(yollar, capa_tckn="", bildir=None):
                      "\n\nNüshaların doğru dosyalar olduğunu kontrol edin.")
     # Yeni imza katmayan nüsha: ayni dosya iki kez eklenmis ya da taraf belgeyi
     # imzalamadan geri gondermis. Birlesik belgede o tarafin imzasi eksik kalir.
-    katkisiz = []
+    katkisiz, adlar_k = [], []
     for i, u in enumerate(nushalar):
         digerleri = set().union(*(k for j, k in enumerate(kumeler) if j != i))
         if kumeler[i] <= digerleri:
             kimler = sorted({t["cert"]["ad"] for t in tum if t["u"] is u})
-            katkisiz.append(f"“{os.path.basename(u['yol'])}” ({', '.join(kimler)})")
+            adlar_k.append(f"“{os.path.basename(u['yol'])}”")
+            katkisiz.append(f"{adlar_k[-1]}: {', '.join(kimler)}")
     if katkisiz:
         bildir("muk", "hata", "yeni imza katmayan nüsha var")
+        # Ilk satir ana pencerede tek basina gosterilir: dosya adi orada olmali.
         raise Durdur(
-            "Şu nüsha birleşik belgeye yeni imza katmıyor:\n\n"
-            + "\n".join(katkisiz) +
+            ", ".join(adlar_k) + " birleşik belgeye yeni imza katmıyor.\n\n"
+            "Nüshadaki imzalar:\n" + "\n".join(katkisiz) +
             "\n\nBu nüshadaki imzaların tamamı diğer nüshalarda zaten var. Aynı dosya "
             "iki kez eklenmiş ya da taraf belgeyi imzalamadan geri göndermiş olabilir. "
             "Nüshayı listeden çıkarın ya da imzalı nüshayı isteyin.")

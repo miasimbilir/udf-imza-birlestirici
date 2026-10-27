@@ -173,7 +173,8 @@ class Kapilar(GeciciKlasor):
     def test_imzalanmadan_donen_nusha(self):
         msj = self.durmali([veri("nusha-arb-a"), veri("nusha-arb-b"), veri("nusha-arb")],
                            "yeni imza katmıyor")
-        self.assertIn("nusha-arb.udf", msj)
+        # ana pencere yalnız ilk satırı gösterir: dosya adı orada olmalı
+        self.assertIn("nusha-arb.udf", msj.split("\n")[0])
         self.assertNotIn("nusha-arb-a.udf", msj)
 
     def test_bozulmus_imza(self):
