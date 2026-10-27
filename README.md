@@ -11,6 +11,14 @@ tutanak için beklenen süre günlerden saatlere iner.
 > Program **yeni imza atmaz** ve **belge metnine dokunmaz.** Yalnızca mevcut
 > imzaları tek dosyada toplar.
 
+![Ardışık imza ile eşzamanlı imzanın karşılaştırması](tanitim/program.png)
+
+## Sürüm 1.1'de yeni
+
+![Sürüm 1.1 yenilikleri](tanitim/surum-1.1.png)
+
+Ayrıntılar [sürüm notunda](../../releases/tag/v1.1).
+
 ## İndirme
 
 [Sürümler](../../releases) sayfasından işletim sisteminize uygun arşivi indirin.
@@ -18,7 +26,7 @@ Kurulum gerekmez.
 
 | | |
 |---|---|
-| Windows | `UDF-Imza-Birlestirici-Windows.zip` — açıp `.exe` dosyasını çalıştırın |
+| Windows | `…-Windows.zip` — açıp `.exe` dosyasını çalıştırın |
 | macOS (Apple Silicon) | `…-macOS-AppleSilicon.zip` |
 | macOS (Intel) | `…-macOS-Intel.zip` |
 
