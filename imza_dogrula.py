@@ -11,13 +11,21 @@ KATI denetlenir, dolayisiyla imza sahteciligine kapi acilmaz.
 """
 import hashlib
 
-from cms_imza import coz_tlv, oid_metin
+from cms_imza import coz_tlv, oid_metin, tlv
 
 OZET_OID = {
     "sha1": "1.3.14.3.2.26",
     "sha256": "2.16.840.1.101.3.4.2.1",
     "sha384": "2.16.840.1.101.3.4.2.2",
     "sha512": "2.16.840.1.101.3.4.2.3",
+}
+
+# Ayni OID'lerin DER govdesi (etiket ve uzunluk haric) — DigestInfo kurmak icin
+OZET_OID_DER = {
+    "sha1": bytes.fromhex("2b0e03021a"),
+    "sha256": bytes.fromhex("608648016503040201"),
+    "sha384": bytes.fromhex("608648016503040202"),
+    "sha512": bytes.fromhex("608648016503040203"),
 }
 
 # imza algoritmasi OID -> (tip, ozet)   ozet None ise SignerInfo'daki kullanilir
@@ -52,7 +60,9 @@ EGRILER = {
         0x3617de4a96262c6f5d9e98bf9292dc29f8f41dbd289a147ce9da3113b5f0b8c00a60b1ce1d7e819d7a431d7c90ea0e5f,
         0xffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973, 48),
     "1.3.132.0.35": (          # P-521 / secp521r1
-        0x01ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff,
+        # p = 2^521 - 1. Onaltilik yazimda iki "f" eksik kalmisti (513 bit):
+        # gercek P-521 anahtarlari "egri uzerinde degil" diye reddediliyordu.
+        2**521 - 1,
         0x0051953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00,
         0x00c6858e06b70404e9cd9e3ecb662395b4429c648139053fb521f828af606b4d3dbaa14b5e77efe75928fe1dc127a2ffa8de3348b3c1856a429bf97e7e31c2e5bd66,
         0x011839296a789a3bc0045c8a5fb42c7d1bd998f54449579b446817afbd17273e662c97ee72995ef42640c550b9013fad0761353c7086a272c24088be94769fd16650,
@@ -99,7 +109,9 @@ def ec_nokta(spki):
     nokta = spki[alanlar[1][3]:alanlar[1][4]][1:]                # kullanilmayan-bit
     if not nokta or nokta[0] != 0x04:                            # yalniz sikistirilmamis
         return egri, None
-    boy = (len(nokta) - 1) // 2
+    boy, artan = divmod(len(nokta) - 1, 2)
+    if artan or (egri in EGRILER and boy != EGRILER[egri][5]):   # tam alan boyu
+        return egri, None
     return egri, (int.from_bytes(nokta[1:1 + boy], "big"),
                   int.from_bytes(nokta[1 + boy:], "big"))
 
@@ -109,12 +121,19 @@ def ecdsa_dogrula(spki, imza, veri, ozet_adi):
     if not Q or egri_oid not in EGRILER:
         return False
     p, b, gx, gy, n, _ = EGRILER[egri_oid]
+    if not (Q[0] < p and Q[1] < p):                              # indirgenmis koordinat
+        return False
     if (Q[1] * Q[1] - Q[0] ** 3 + 3 * Q[0] - b) % p != 0:        # nokta egri uzerinde mi
         return False
     try:
-        s0 = coz_tlv(imza)[0]
+        # Imza tam olarak SEQUENCE { INTEGER r, INTEGER s } olmali; sonrasinda
+        # fazladan bayt ya da baska etiket kati dogrulayicilarda gecersizdir.
+        ust = coz_tlv(imza)
+        if len(ust) != 1 or ust[0][0] != 0x30:
+            return False
+        s0 = ust[0]
         f = coz_tlv(imza, s0[3], s0[4])
-        if len(f) != 2:
+        if len(f) != 2 or f[0][0] != 0x02 or f[1][0] != 0x02:
             return False
         r = int.from_bytes(imza[f[0][3]:f[0][4]], "big")
         s = int.from_bytes(imza[f[1][3]:f[1][4]], "big")
@@ -149,6 +168,12 @@ def rsa_anahtar(spki):
             int.from_bytes(bit[rf[1][3]:rf[1][4]], "big"))
 
 
+def _digestinfo(ozet_adi, ozet, null):
+    """DigestInfo'nun DER kodlamasi; null=False ise NULL parametresi yazilmaz."""
+    alg = tlv(0x06, OZET_OID_DER[ozet_adi]) + (b"\x05\x00" if null else b"")
+    return tlv(0x30, tlv(0x30, alg) + tlv(0x04, ozet))
+
+
 def rsa_dogrula(spki, imza, veri, ozet_adi):
     """Doner: (gecerli_mi, standart_disi_kodlama_mi)"""
     ne = rsa_anahtar(spki)
@@ -156,9 +181,12 @@ def rsa_dogrula(spki, imza, veri, ozet_adi):
         return False, False
     n, e = ne
     k = (n.bit_length() + 7) // 8
-    if len(imza) != k or n <= 0 or e <= 0:
+    if len(imza) != k or k < 11 or e <= 0 or ozet_adi not in OZET_OID_DER:
         return False, False
-    kutu = pow(int.from_bytes(imza, "big"), e, n).to_bytes(k, "big")
+    s = int.from_bytes(imza, "big")
+    if s >= n:                                            # RFC 8017 m.8.2.2: 0 <= s < n
+        return False, False
+    kutu = pow(s, e, n).to_bytes(k, "big")
 
     if kutu[0] != 0x00 or kutu[1] != 0x01:
         return False, False
@@ -169,30 +197,16 @@ def rsa_dogrula(spki, imza, veri, ozet_adi):
         return False, False
     di = kutu[i + 1:]
 
-    try:
-        df = coz_tlv(di)
-        if len(df) != 1 or df[0][4] != len(di):          # sonrasinda fazladan bayt olamaz
-            return False, False
-        ic = coz_tlv(di, df[0][3], df[0][4])
-        if len(ic) != 2:
-            return False, False
-        alg = coz_tlv(di, ic[0][3], ic[0][4])
-        if len(alg) > 2:
-            return False, False
-        standart = False
-        if len(alg) == 2:                                 # parametre varsa tam olarak NULL
-            if alg[1][0] != 0x05 or alg[1][4] != alg[1][3]:
-                return False, False
-            standart = True
-        if oid_metin(di[alg[0][3]:alg[0][4]]) != OZET_OID.get(ozet_adi):
-            return False, False
-        bildirilen = di[ic[1][3]:ic[1][4]]
-    except Exception:
-        return False, False
-
-    if bildirilen != hashlib.new(ozet_adi, veri).digest():
-        return False, False
-    return True, not standart
+    # DigestInfo AYRISTIRILMAZ; beklenen iki kodlamayla bayt bayt karsilastirilir
+    # (RFC 8017 m.8.2.2'deki yontem). Gevsek ayristirma (serbest etiket, uzun
+    # bicim uzunluk, OID sonunda artik bayt) imzanin icine cop yerlestirmeye
+    # izin verir; bu, kucuk uslu anahtarlarda sahteciligin on kosuludur.
+    ozet = hashlib.new(ozet_adi, veri).digest()
+    if di == _digestinfo(ozet_adi, ozet, null=True):
+        return True, False
+    if di == _digestinfo(ozet_adi, ozet, null=False):     # yalniz NULL eksik: isaretle
+        return True, True
+    return False, False
 
 
 # --------------------------------------------------------------------------
@@ -232,17 +246,19 @@ def imza_dogrula(bi, sertifika_ham, content):
         return False, False, "özet algoritması çözülemedi"
 
     veri, imza = imzali_alanlar_verisi(bi["ham"])
-    imzali_alanli = veri is not None
-    if not imzali_alanli:
-        veri = content
-    else:
-        # signedAttrs varsa imza belgeye YALNIZ messageDigest uzerinden baglanir
-        # (RFC 5652 m.5.3): tam olarak bir tane olmali.
-        alanlar = bi["imzali_alanlar"]
-        if alanlar.count("messageDigest") != 1 or not bi.get("ozet"):
-            return False, False, "imzada belge özeti (messageDigest) yok ya da birden fazla"
-        if alanlar.count("contentType") > 1:
-            return False, False, "imzada birden fazla içerik türü var"
+    if veri is None:
+        # signedAttrs'siz imza dogrudan icerigi imzalar. Bu kabul edilirse baska
+        # bir imzanin signedAttrs baytlari content.xml yerine konup o imza
+        # "gecerli" gosterilebilir (imzalayan o icerigi hic imzalamamistir).
+        # UYAP imzalari (CAdES) her zaman signedAttrs tasir; olmayani reddedilir.
+        return False, False, "imzada belge özeti (messageDigest) yok ya da birden fazla"
+    # Imza belgeye YALNIZ messageDigest uzerinden baglanir (RFC 5652 m.5.3):
+    # tam olarak bir tane olmali.
+    alanlar = bi["imzali_alanlar"]
+    if alanlar.count("messageDigest") != 1 or not bi.get("ozet"):
+        return False, False, "imzada belge özeti (messageDigest) yok ya da birden fazla"
+    if alanlar.count("contentType") > 1:
+        return False, False, "imzada birden fazla içerik türü var"
     spki = spki_cikar(sertifika_ham)
 
     if tip == "RSA":
@@ -252,10 +268,9 @@ def imza_dogrula(bi, sertifika_ham, content):
     if not ok:
         return False, False, "imza geçersiz — belge imzalandıktan sonra değişmiş olabilir"
 
-    # signedAttrs kullanildiysa messageDigest gercekten icerigin ozeti mi?
-    if imzali_alanli:
-        if hashlib.new(bi["ozet_alg"], content).hexdigest() != bi["ozet"]:
-            return False, False, "imza bu belgenin içeriğine ait değil"
+    # messageDigest gercekten icerigin ozeti mi?
+    if hashlib.new(bi["ozet_alg"], content).hexdigest() != bi["ozet"]:
+        return False, False, "imza bu belgenin içeriğine ait değil"
     icerik_turu = bi.get("icerik_turu")
     if icerik_turu and icerik_turu != "1.2.840.113549.1.7.1":
         return False, False, "beklenmeyen içerik türü"
