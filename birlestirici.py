@@ -74,6 +74,13 @@ def _imza_anindaki_gecerlilik(bi, cert):
     return z, b1 <= z <= b2
 
 
+def _denetlenemedi_notu(ad, bi):
+    neden = ("imza zamanı yok" if not zaman_coz(bi.get("zaman"))
+             else "sertifikanın geçerlilik tarihleri okunamadı")
+    return (f"{ad} imzasında {neden}; sertifikanın imza anında geçerli olup olmadığı "
+            "denetlenemedi.")
+
+
 def _imza_coz(u):
     """sign.sgn'i cozer; bozuk yapida anlasilir bir Durdur verir."""
     ad = os.path.basename(u["yol"])
@@ -102,13 +109,16 @@ def incele_tek(yol):
     u = udf_oku(yol)
     sd = _imza_coz(u)
     dizin = _sertifika_dizini(sd)
-    imzacilar, gecerli, sebep = [], True, ""
+    imzacilar, gecerli, sebep, notlar = [], True, "", []
     for si in sd["imzalar"]:
         bi = cms.imza_bilgi(si)
         cert_ham, cert = dizin.get((bi.get("issuer_der"), bi.get("seri")), (None, None))
         ok, disi, s = dog.imza_dogrula(bi, cert_ham, u["content"])
+        zamaninda = None
         if ok:
             z, zamaninda = _imza_anindaki_gecerlilik(bi, cert)
+            if zamaninda is None:
+                notlar.append(_denetlenemedi_notu(cert["ad"], bi))
             if zamaninda is False:
                 ok, s = False, f"sertifika imza anında geçerli değildi ({zaman_yaz(z)})"
         if not ok:
@@ -119,9 +129,10 @@ def incele_tek(yol):
             "unvan": cert.get("unvan") if cert else None,
             "zaman": zaman_yaz(zaman_coz(bi.get("zaman"))),
             "capa": False, "disi": disi, "gecerli": ok,
+            "sure_denetlenemedi": ok and zamaninda is None,
         })
     return {"ad": os.path.basename(yol), "imzacilar": imzacilar, "gecerli": gecerli,
-            "sebep": sebep, "detached": sd["detached"],
+            "sebep": sebep, "detached": sd["detached"], "notlar": notlar,
             "ozet": hashlib.sha256(u["content"]).hexdigest()}
 
 
@@ -269,13 +280,26 @@ def denetle(yollar, capa_tckn="", bildir=None):
 
     # ---- KAPI 6: sertifika imza anında geçerli miydi ------------------------
     bildir("gecer", "calisiyor", "")
+    denetlenemeyen = []
     for t in tum:
         z, zamaninda = _imza_anindaki_gecerlilik(t["bi"], t["cert"])
         if zamaninda is False:
             bildir("gecer", "hata", f"{t['cert']['ad']}: sertifika imza anında geçersiz")
             raise Durdur(f"{t['cert']['ad']} sertifikası imza anında geçerli değildi "
                          f"({zaman_yaz(z)}).")
-    bildir("gecer", "tamam", f"{len(tum)} sertifikanın tamamı imza anında geçerliydi")
+        if zamaninda is None:
+            # Durdurulmaz (kullanici karari 19.11.2026): bilerek "denetlenemedi" denir;
+            # kayda "tamami gecerliydi" yazilmaz.
+            not_ = _denetlenemedi_notu(t["cert"]["ad"], t["bi"])
+            if not_ not in denetlenemeyen:
+                denetlenemeyen.append(not_)
+    if denetlenemeyen:
+        uyarilar.extend(denetlenemeyen)
+        bildir("gecer", "tamam",
+               f"{len(tum) - len(denetlenemeyen)} imzada sertifika imza anında geçerliydi; "
+               f"{len(denetlenemeyen)} imzada denetlenemedi (imza zamanı yok)")
+    else:
+        bildir("gecer", "tamam", f"{len(tum)} sertifikanın tamamı imza anında geçerliydi")
     uyarilar.append("Sertifika zinciri (kök makam) doğrulanmadı.")
 
     # ---- birleştir ve KAPI 7/8: çıktıyı yeniden doğrula --------------------
@@ -322,6 +346,7 @@ def denetle(yollar, capa_tckn="", bildir=None):
         "ad": ad + " (birleşik imzalı).udf",
         "imzacilar": imzacilar,
         "uyarilar": list(dict.fromkeys(uyarilar)),
+        "denetlenemeyen": denetlenemeyen,
         "ozet": icerik_ozeti,
         "nushalar": [{"ad": os.path.basename(u["yol"]),
                       "imza": len(u["sd"]["imzalar"])} for u in nushalar],

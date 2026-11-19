@@ -151,6 +151,8 @@ def tek_dosya_raporu(t):
             notlar.append("İMZA DOĞRULANAMADI")
         if imz.get("disi"):
             notlar.append("standart dışı kodlama")
+        if imz.get("sure_denetlenemedi"):
+            notlar.append("imza anındaki sertifika geçerliliği denetlenemedi")
         ek = ("  [" + ", ".join(notlar) + "]") if notlar else ""
         s.append(f"  {i}. {imz['ad']}  (T.C. {imz.get('tckn') or '—'})  "
                  f"{imz['zaman']}{ek}")
@@ -407,6 +409,8 @@ class Uygulama(TEMEL_PENCERE):
                     f"{n} imza" if t["gecerli"] else "İmza doğrulanamadı",
                     (", ".join(i["ad"] for i in t["imzacilar"]) if t["gecerli"]
                      else t["sebep"]) +
+                    ("".join(f"\n⚠ {n}" for n in t.get("notlar", []))
+                     if t["gecerli"] else "") +
                     ("\nBirleştirmek için ikinci nüshayı da ekleyin."
                      if t["gecerli"] else ""))
                 if t["gecerli"]:
@@ -433,7 +437,8 @@ class Uygulama(TEMEL_PENCERE):
             self.durum_goster(
                 True, "Birleştirmeye uygun",
                 f"{len(sonuc['imzacilar'])} imza · 8 denetim geçildi\n"
-                f"Ortak imza: {', '.join(ortak) if ortak else '—'}")
+                f"Ortak imza: {', '.join(ortak) if ortak else '—'}" +
+                "".join(f"\n⚠ {n}" for n in sonuc.get("denetlenemeyen", [])))
             self.birlestir_kutu.pack(pady=(0, 8))
             self.rapor_cerceve.pack()
         finally:

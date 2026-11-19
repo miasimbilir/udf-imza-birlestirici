@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Gece denetiminin önerilerinden yapılanlar (19.11.2026).
 
-Sertifika sırası, tek belge incelemesinde süre denetimi, UYAP dışı ZIP bölümü
+Sertifika sırası, tek belge incelemesinde süre denetimi, imza zamanı yoksa
+"denetlenemedi" (karar 07), UYAP dışı ZIP bölümü
 uyarısı, zaman damgası ve SHA-1 notları, aşırı büyük RSA anahtarı, iptal
 listesi tekrarı, çözümlenemeyen anahtar.
 
@@ -158,6 +159,45 @@ class Dayaniklilik(tb.GeciciKlasor):
         with mock.patch.object(cms, "birlestir", side_effect=ValueError("encap farklı")):
             self.durmali([tb.veri("nusha-arb-a"), tb.veri("nusha-arb-b")],
                          "birleştirilemedi")
+
+
+class ImzaZamaniYok(tb.GeciciKlasor):
+    """Karar 07 (19.11.2026): imza zamanı okunamazsa durdurulmaz, "denetlenemedi" denir."""
+
+    def zamansiz(self, ad):
+        n, d = tb.arb_anahtari()
+
+        def islem(sd):
+            i = self.arb_imzasi_indeksi(sd)
+            sd["imzalar"][i] = tb.imzaci_degistir(sd["imzalar"][i], n, d,
+                                                  alan_suzgeci=lambda a: a != "signingTime")
+        return self.sgn_degistir(tb.veri("nusha-arb-a"), ad, islem)
+
+    def test_birlestirmede_denetlenemedi_yazilir(self):
+        r = b.denetle([self.zamansiz("z.udf"), tb.veri("nusha-arb-b")])
+        self.assertTrue(r["denetlenemeyen"])
+        self.assertTrue(any("imza zamanı yok" in u and "denetlenemedi" in u for u in r["uyarilar"]))
+        gecer = [a for a in r["adimlar"] if a["adim"] == "gecer"][0]
+        self.assertIn("denetlenemedi", gecer["detay"])
+        self.assertNotIn("tamamı", gecer["detay"])
+
+    def test_suresi_gecmis_ve_zamansiz_imza_denetlenemedi_sayilir(self):
+        # gece raporundaki senaryo: sertifikanın süresi geçmiş ama imza zamanı
+        # yok. "Geçerliydi" de "geçersizdi" de denemez; sonuç "denetlenemedi".
+        sert = {"baslangic": "200101000000Z", "bitis": "210101000000Z"}
+        self.assertEqual(b._imza_anindaki_gecerlilik({}, sert), (None, None))
+        self.assertIs(b._imza_anindaki_gecerlilik({"zaman": "261021114548Z"}, sert)[1], False)
+
+    def test_zamani_olan_imzada_uyari_yok(self):
+        r = b.denetle([tb.veri("nusha-arb-a"), tb.veri("nusha-arb-b")])
+        self.assertEqual(r["denetlenemeyen"], [])
+
+    def test_tek_belgede_denetlenemedi_isareti(self):
+        t = b.incele_tek(self.zamansiz("zt.udf"))
+        self.assertTrue(t["gecerli"])
+        self.assertTrue(any("denetlenemedi" in n for n in t["notlar"]))
+        arb = [i for i in t["imzacilar"] if i["ad"] == "DENEME ARABULUCU"][0]
+        self.assertTrue(arb["sure_denetlenemedi"])
 
 
 if __name__ == "__main__":
