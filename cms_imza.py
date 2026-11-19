@@ -186,6 +186,19 @@ def kur(d, sirala="zaman"):
         sertler.sort()
     elif sirala == "zaman":
         imzalar.sort(key=lambda s: (imza_bilgi(s).get("zaman") or ""))
+        # UYAP ardisik imzada her imzacinin sertifikasini imzasiyla ayni sirada
+        # yazar (arsivdeki 88/88 cok imzali UYAP belgesi). Nushalar hangi
+        # sirayla verilirse verilsin cikti bu siraya uysun diye sertifikalar
+        # da imza sirasina dizilir; imzaya bagli olmayanlar sona kalir.
+        sira = {}
+        for i, s in enumerate(imzalar):
+            bi = imza_bilgi(s)
+            sira.setdefault((bi.get("issuer_der"), bi.get("seri")), i)
+
+        def sert_sirasi(c):
+            x = sertifika_bilgi(c, coz_tlv(c)[0])
+            return sira.get((x["issuer_der"], x["seri"]), len(imzalar))
+        sertler.sort(key=sert_sirasi)
 
     govde = d["surum"]
     govde += tlv(0x31, b"".join(sorted(set(d["ozet_algs"]))))
@@ -284,7 +297,7 @@ def birlestir(cozulmusler, sirala="zaman"):
         "ctype_ham": ilk["ctype_ham"], "surum": ilk["surum"], "encap": ilk["encap"],
         "ozet_algs": [x for d in cozulmusler for x in d["ozet_algs"]],
         "sertifikalar": sertler,
-        "criller": [x for d in cozulmusler for x in d["criller"]],
+        "criller": list(dict.fromkeys(x for d in cozulmusler for x in d["criller"])),
         "imzalar": imzalar,
     }
     return kur(m, sirala=sirala)

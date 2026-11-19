@@ -168,6 +168,11 @@ def rsa_anahtar(spki):
             int.from_bytes(bit[rf[1][3]:rf[1][4]], "big"))
 
 
+# Nitelikli sertifikalarda RSA anahtari 2048-4096 bit; bunun cok ustu ya bozuk
+# ya da kotu niyetli bir dosyadir (saf Python us alma dakikalar surebilir).
+AZAMI_RSA_BIT = 16384
+
+
 def _digestinfo(ozet_adi, ozet, null):
     """DigestInfo'nun DER kodlamasi; null=False ise NULL parametresi yazilmaz."""
     alg = tlv(0x06, OZET_OID_DER[ozet_adi]) + (b"\x05\x00" if null else b"")
@@ -180,6 +185,8 @@ def rsa_dogrula(spki, imza, veri, ozet_adi):
     if not ne:
         return False, False
     n, e = ne
+    if n.bit_length() > AZAMI_RSA_BIT:                    # saf Python'da arayuzu dondurur
+        return False, False
     k = (n.bit_length() + 7) // 8
     if len(imza) != k or k < 11 or e <= 0 or ozet_adi not in OZET_OID_DER:
         return False, False
@@ -259,12 +266,14 @@ def imza_dogrula(bi, sertifika_ham, content):
         return False, False, "imzada belge özeti (messageDigest) yok ya da birden fazla"
     if alanlar.count("contentType") > 1:
         return False, False, "imzada birden fazla içerik türü var"
-    spki = spki_cikar(sertifika_ham)
-
-    if tip == "RSA":
-        ok, disi = rsa_dogrula(spki, imza, veri, ozet)
-    else:
-        ok, disi = ecdsa_dogrula(spki, imza, veri, ozet), False
+    try:
+        spki = spki_cikar(sertifika_ham)
+        if tip == "RSA":
+            ok, disi = rsa_dogrula(spki, imza, veri, ozet)
+        else:
+            ok, disi = ecdsa_dogrula(spki, imza, veri, ozet), False
+    except (ValueError, IndexError):
+        return False, False, "imzalayanın sertifikasındaki anahtar çözümlenemedi"
     if not ok:
         return False, False, "imza geçersiz — belge imzalandıktan sonra değişmiş olabilir"
 

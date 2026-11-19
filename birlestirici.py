@@ -43,6 +43,37 @@ def _sertifika_dizini(sd):
     return dizin
 
 
+# UYAP'in yazdigi bolumler; documentproperties.xml imzaya dahil degildir.
+BILINEN_BOLUMLER = {"content.xml", "sign.sgn", "documentproperties.xml"}
+
+
+def _yabanci_bolumler(u):
+    return sorted(n for n in u["uyeler"] if n not in BILINEN_BOLUMLER)
+
+
+def _imza_bilgi_notlari(bi, cert):
+    """Imza gecerli olsa da kullaniciya soylenmesi gerekenler."""
+    notlar = []
+    ad = cert["ad"] if cert else "bilinmeyen imzacı"
+    if "signatureTimeStampToken" not in bi["imzasiz_alanlar"]:
+        notlar.append(f"{ad} imzasında zaman damgası yok; imza saati "
+                      "imzalayanın kendi bilgisayarına ait.")
+    if bi.get("ozet_alg") == "sha1" or bi.get("imza_alg_oid") in ("1.2.840.113549.1.1.5",
+                                                                   "1.2.840.10045.4.1"):
+        notlar.append(f"{ad} imzası eski SHA-1 algoritmasıyla atılmış; bazı "
+                      "doğrulayıcılar bu imzayı kabul etmeyebilir.")
+    return notlar
+
+
+def _imza_anindaki_gecerlilik(bi, cert):
+    """(z, gecerli_mi): z imza zamani; gecerli_mi None ise denetlenemedi."""
+    z = zaman_coz(bi.get("zaman"))
+    b1, b2 = zaman_coz(cert["baslangic"]), zaman_coz(cert["bitis"])
+    if not (z and b1 and b2):
+        return z, None
+    return z, b1 <= z <= b2
+
+
 def _imza_coz(u):
     """sign.sgn'i cozer; bozuk yapida anlasilir bir Durdur verir."""
     ad = os.path.basename(u["yol"])
@@ -76,6 +107,10 @@ def incele_tek(yol):
         bi = cms.imza_bilgi(si)
         cert_ham, cert = dizin.get((bi.get("issuer_der"), bi.get("seri")), (None, None))
         ok, disi, s = dog.imza_dogrula(bi, cert_ham, u["content"])
+        if ok:
+            z, zamaninda = _imza_anindaki_gecerlilik(bi, cert)
+            if zamaninda is False:
+                ok, s = False, f"sertifika imza anında geçerli değildi ({zaman_yaz(z)})"
         if not ok:
             gecerli = False
             sebep = f"{cert['ad'] if cert else 'bilinmeyen imzacı'}: {s}"
@@ -124,6 +159,14 @@ def denetle(yollar, capa_tckn="", bildir=None):
             bildir("oku", "hata", str(e).split("\n")[0])
             raise
         nushalar.append(u)
+    for u in nushalar:
+        yabanci = _yabanci_bolumler(u)
+        if yabanci:
+            nereye = ("birleşik belgeye aynen taşındı" if u is nushalar[0]
+                      else "birleşik belgeye alınmadı")
+            uyarilar.append(f"“{os.path.basename(u['yol'])}” dosyasında UYAP belgesinde "
+                            f"bulunmayan bölüm var ({', '.join(yabanci)}). Bu bölüm imzaya "
+                            f"dahil değildir; {nereye}.")
     bildir("oku", "tamam", f"{len(nushalar)} nüsha · " +
            " · ".join(f"{len(u['sd']['imzalar'])} imza" for u in nushalar))
 
@@ -157,9 +200,7 @@ def denetle(yollar, capa_tckn="", bildir=None):
                 bildir("imza", "hata", f"{os.path.basename(u['yol'])} → {kim}: {sebep}")
                 raise Durdur(f"“{os.path.basename(u['yol'])}” dosyasındaki bir imza "
                              f"doğrulanamadı.\n\n{kim}: {sebep}")
-            if not bi["imzasiz_alanlar"]:
-                uyarilar.append(f"{cert['ad']} imzasında zaman damgası yok; imza saati "
-                                "imzalayanın kendi bilgisayarına ait.")
+            uyarilar.extend(_imza_bilgi_notlari(bi, cert))
             if disi:
                 uyarilar.append(
                     f"{cert['ad']} imzası standart dışı kodlanmış (DigestInfo'da NULL "
@@ -169,7 +210,8 @@ def denetle(yollar, capa_tckn="", bildir=None):
     disi_sayi = sum(1 for t in tum if t["disi"])
     bildir("imza", "tamam", f"{len(tum)} imzanın tamamı geçerli" +
            (f" ({disi_sayi} tanesinde standart dışı kodlama)" if disi_sayi else ""))
-    bildir("bag", "tamam", "her imza bu belgenin SHA-256 özetine bağlı")
+    algler = sorted({t["bi"]["ozet_alg"].upper().replace("SHA", "SHA-") for t in tum})
+    bildir("bag", "tamam", f"her imza bu belgenin özetine bağlı ({', '.join(algler)})")
 
     # ---- KAPI 4: ortak (çapa) imza -----------------------------------------
     bildir("capa", "calisiyor", "")
@@ -228,9 +270,8 @@ def denetle(yollar, capa_tckn="", bildir=None):
     # ---- KAPI 6: sertifika imza anında geçerli miydi ------------------------
     bildir("gecer", "calisiyor", "")
     for t in tum:
-        z = zaman_coz(t["bi"].get("zaman"))
-        b1, b2 = zaman_coz(t["cert"]["baslangic"]), zaman_coz(t["cert"]["bitis"])
-        if z and b1 and b2 and not (b1 <= z <= b2):
+        z, zamaninda = _imza_anindaki_gecerlilik(t["bi"], t["cert"])
+        if zamaninda is False:
             bildir("gecer", "hata", f"{t['cert']['ad']}: sertifika imza anında geçersiz")
             raise Durdur(f"{t['cert']['ad']} sertifikası imza anında geçerli değildi "
                          f"({zaman_yaz(z)}).")
@@ -240,7 +281,11 @@ def denetle(yollar, capa_tckn="", bildir=None):
     # ---- birleştir ve KAPI 7/8: çıktıyı yeniden doğrula --------------------
     bildir("son", "calisiyor", "birleştiriliyor…")
     asil = nushalar[0]
-    yeni_sgn = cms.birlestir([u["sd"] for u in nushalar], sirala="zaman")
+    try:
+        yeni_sgn = cms.birlestir([u["sd"] for u in nushalar], sirala="zaman")
+    except ValueError as e:
+        bildir("son", "hata", "imza bölümleri birleştirilemedi")
+        raise Durdur(f"Nüshaların imza bölümleri birleştirilemedi ({e}); dosya üretilmedi.")
     yeni_sd = cms.coz(yeni_sgn)
     beklenen = len({t["bi"]["anahtar"] for t in tum})
     if len(yeni_sd["imzalar"]) != beklenen:
