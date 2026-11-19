@@ -19,7 +19,7 @@ Testler geçmezse exe üretilmez.
 
 Elle yapmayı tercih ederseniz:
 
-    python -m pip install --upgrade pip pyinstaller tkinterdnd2
+    python -m pip install --upgrade pip pyinstaller==6.22.3 tkinterdnd2==0.7.0
     python -m unittest discover -s testler
 
     pyinstaller --noconfirm --clean --onefile --windowed ^

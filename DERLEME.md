@@ -16,7 +16,7 @@ Bir Windows bilgisayarda:
 3. Klasörde bir komut istemi açıp:
 
 ```bat
-python -m pip install --upgrade pip pyinstaller tkinterdnd2
+python -m pip install --upgrade pip pyinstaller==6.22.3 tkinterdnd2==0.7.0
 
 pyinstaller --noconfirm --clean --onefile --windowed ^
   --name "UDF Imza Birlestirici" --icon ikon\uygulama.ico ^
@@ -50,7 +50,7 @@ macOS'un sistem Python'u 2010 tarihli Tcl/Tk 8.5 ile gelir ve **pencereyi boş
 ```bash
 brew install python-tk@3.13
 /opt/homebrew/bin/python3.13 -m venv /tmp/derleme
-/tmp/derleme/bin/pip install pyinstaller tkinterdnd2
+/tmp/derleme/bin/pip install pyinstaller==6.22.3 tkinterdnd2==0.7.0
 
 /tmp/derleme/bin/pyinstaller --noconfirm --clean --windowed \
   --name "UDF Imza Birlestirici" --icon ikon/uygulama.icns \
@@ -99,6 +99,15 @@ runner çalışır hâle gelirse matristeki satır geri açılır.
 Elle başlatmak için: **Actions → Uygulamayı derle → Run workflow**
 (ya da `gh workflow run derle.yml`). `s` ile başlayan bir etiket (`s1.1`)
 gönderilirse akış sürüm de oluşturur.
+
+## Sürüm sabitleme
+
+Derleme araçları sabit sürümlerle kurulur (PyInstaller 6.22.3, tkinterdnd2 0.7.0);
+GitHub akışındaki eylemler de etiketle değil kayıt kimliğiyle (commit SHA) çağrılır.
+Böylece aynı kaynaktan her seferinde aynı araçlarla paket çıkar ve bir eylemin ya da
+paketin sonradan değiştirilmesi derlemeye sızamaz. Sürüm yükseltmek bilinçli bir iş
+olarak yapılır: sürümü buradaki ve `derle-windows.bat`, `WINDOWS-DERLEME.txt`,
+`.github/workflows/derle.yml` içindeki yerlerde birlikte değiştirin.
 
 ## Testler
 

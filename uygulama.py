@@ -34,7 +34,7 @@ except Exception:
     TEMEL_PENCERE, SURUKLENEBILIR = tk.Tk, False
 
 UYGULAMA_ADI = "UDF İmza Birleştirici"
-SURUM = "1.1"
+SURUM = "1.1.1"
 YAZAR = "Av. Arb. Mevlana İbrahim Asım Bilir"
 YAZAR_EK = "av.ibrahimbilir@gmail.com"
 TELIF = "© 2026 Av. Arb. Mevlana İbrahim Asım Bilir"

@@ -36,7 +36,7 @@ for /f "delims=" %%v in ('%PY% --version') do echo Python bulundu: %%v  ^(%PY%^)
 REM --- Gerekli paketler -------------------------------------------------
 echo.
 echo [1/5] Gerekli paketler kuruluyor (birkac dakika surebilir)...
-%PY% -m pip install --quiet --upgrade pip pyinstaller tkinterdnd2
+%PY% -m pip install --quiet --upgrade pip pyinstaller==6.22.3 tkinterdnd2==0.7.0
 if errorlevel 1 (
     echo [HATA] Paketler kurulamadi. Internet baglantinizi kontrol edin.
     pause
